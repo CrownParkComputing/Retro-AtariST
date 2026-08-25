@@ -26,11 +26,20 @@ class FramebufferView extends StatefulWidget {
   /// an ST, and every one of these apps has ended up defaulting it on.
   final bool pixelPerfect;
 
+  /// Stretch the picture to fill the space instead of keeping the ST's shape.
+  ///
+  /// Off by default -- 4:3 is what the machine actually produced, and a
+  /// stretched picture is wrong in a way that is hard to unsee once noticed.
+  /// But a 16:9 handheld showing a 4:3 picture wastes a quarter of its screen
+  /// on black bars, and plenty of people would rather have the pixels.
+  final bool fillScreen;
+
   const FramebufferView({
     super.key,
     required this.core,
     this.pollInterval = const Duration(milliseconds: 16),
     this.pixelPerfect = true,
+    this.fillScreen = false,
   });
 
   @override
@@ -139,6 +148,24 @@ class _FramebufferViewState extends State<FramebufferView> {
       return const ColoredBox(color: Colors.black);
     }
 
+    final picture = RawImage(
+      image: image,
+      fit: BoxFit.fill,
+      filterQuality:
+          widget.pixelPerfect ? FilterQuality.none : FilterQuality.medium,
+    );
+
+    if (widget.fillScreen) {
+      // No AspectRatio at all, rather than a hardcoded 16:9. Filling whatever
+      // space there is gets the handheld's own shape right -- and the panel is
+      // not 16:9 anyway once the rail and the session bar have taken their
+      // share, so a fixed ratio would still leave bars.
+      return ColoredBox(
+        color: Colors.black,
+        child: SizedBox.expand(child: picture),
+      );
+    }
+
     // Sized by the DISPLAY aspect, not the pixel count. Every ST mode was
     // shown on a 4:3 monitor, so 320x200, 640x200 and 640x400 all have
     // differently-shaped pixels; letting width/height decide makes a circle
@@ -148,15 +175,7 @@ class _FramebufferViewState extends State<FramebufferView> {
     return ColoredBox(
       color: Colors.black,
       child: Center(
-        child: AspectRatio(
-          aspectRatio: aspect,
-          child: RawImage(
-            image: image,
-            fit: BoxFit.fill,
-            filterQuality:
-                widget.pixelPerfect ? FilterQuality.none : FilterQuality.medium,
-          ),
-        ),
+        child: AspectRatio(aspectRatio: aspect, child: picture),
       ),
     );
   }

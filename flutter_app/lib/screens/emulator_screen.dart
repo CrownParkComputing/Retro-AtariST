@@ -33,6 +33,10 @@ class EmulatorScreen extends StatefulWidget {
   /// window rather than inside this screen.
   final bool showKeyboard;
 
+  /// Stretch the picture to fill the space rather than keeping the ST's 4:3
+  /// shape. Toggled from the session bar.
+  final bool fillScreen;
+
   /// Whether to draw the on-screen joystick over the picture.
   ///
   /// False when a real controller is connected (see AppPrefs.onScreenControls).
@@ -50,6 +54,7 @@ class EmulatorScreen extends StatefulWidget {
     this.accurateFloppy = false,
     this.showOnScreenControls = true,
     this.showKeyboard = false,
+    this.fillScreen = false,
   });
 
   @override
@@ -201,7 +206,10 @@ class _EmulatorScreenState extends State<EmulatorScreen> {
       onTapCancel: () => widget.core.mouseButton(0, false),
       onLongPressStart: (_) => widget.core.mouseButton(1, true),
       onLongPressEnd: (_) => widget.core.mouseButton(1, false),
-      child: FramebufferView(core: widget.core),
+      child: FramebufferView(
+        core: widget.core,
+        fillScreen: widget.fillScreen,
+      ),
     );
   }
 

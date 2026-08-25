@@ -31,6 +31,7 @@ class AppPrefs {
   static const _kComplianceMode = 'compliance_mode';
   static const _kSidebarVisible = 'sidebar_visible';
   static const _kOnScreenControls = 'on_screen_controls';
+  static const _kScreenFill = 'screen_fill';
 
   /// Whether the setup wizard has been completed FOR THIS BUILD.
   ///
@@ -108,6 +109,18 @@ class AppPrefs {
   static Future<void> setOnScreenControls(OnScreenControls mode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kOnScreenControls, mode.name);
+  }
+
+  /// Stretch the ST picture to fill the screen instead of keeping its 4:3
+  /// shape. Off by default: 4:3 is what the hardware produced.
+  static Future<bool> screenFill() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kScreenFill) ?? false;
+  }
+
+  static Future<void> setScreenFill(bool fill) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kScreenFill, fill);
   }
 
   /// Compliance mode: only the bundled demo is offered and the user's own

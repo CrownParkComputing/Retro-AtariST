@@ -13,6 +13,7 @@ import 'package:retro_atarist/services/session_store.dart';
 import 'package:retro_atarist/ffi/atarist_core.dart';
 import 'package:retro_atarist/ffi/stub_atarist_core.dart';
 import 'package:retro_atarist/screens/library_grid.dart';
+import 'package:retro_atarist/widgets/framebuffer_view.dart';
 import 'package:retro_atarist/theme/retro_atarist_theme.dart';
 import 'package:retro_atarist/widgets/sidebar.dart';
 import 'package:retro_atarist/widgets/sidebar_style.dart';
@@ -341,6 +342,54 @@ void main() {
       // Pausing must never overwrite a save someone made deliberately.
       expect(SessionStore.resumeSlot, isNot(SessionStore.firstUserSlot));
       expect(SessionStore.resumeSlot < SessionStore.firstUserSlot, isTrue);
+    });
+  });
+
+  group('FramebufferView aspect', () {
+    /// Builds the view and waits for its first decoded frame.
+    ///
+    /// runAsync is required: FramebufferView decodes with
+    /// ui.decodeImageFromPixels, whose callback is real engine work that the
+    /// test binding's fake-async zone never runs. Plain pump() therefore
+    /// leaves the image null forever and the view renders its black
+    /// placeholder, with no AspectRatio to inspect.
+    Future<void> buildView(WidgetTester tester, {required bool fill}) async {
+      final core = StubAtariStCore()
+        ..start(const StMachineConfig(tosPath: '/tos/tos102.img'));
+
+      await tester.runAsync(() async {
+        await tester.pumpWidget(MaterialApp(
+          home: Scaffold(
+            body: FramebufferView(core: core, fillScreen: fill),
+          ),
+        ));
+        // Long enough for the 16ms poll to fire and the decode to land.
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      });
+      await tester.pump();
+    }
+
+    testWidgets('4:3 mode constrains the picture to the display aspect',
+        (tester) async {
+      await buildView(tester, fill: false);
+
+      final ratio = tester.widget<AspectRatio>(find.byType(AspectRatio));
+      // Every ST mode was shown on a 4:3 monitor, so this is the DISPLAY
+      // aspect and not width/height -- 320x200 would be 1.6.
+      expect(ratio.aspectRatio, closeTo(4 / 3, 0.001));
+    });
+
+    testWidgets('fill mode drops the AspectRatio entirely', (tester) async {
+      await buildView(tester, fill: true);
+
+      // The picture must actually be there, or "no AspectRatio" would pass
+      // for the black placeholder too.
+      expect(find.byType(RawImage), findsOneWidget);
+      // No AspectRatio at all rather than a hardcoded 16:9: the panel is not
+      // 16:9 once the rail and session bar have taken their share, so a fixed
+      // ratio would still leave bars.
+      expect(find.byType(AspectRatio), findsNothing);
+      expect(find.byType(SizedBox), findsWidgets);
     });
   });
 

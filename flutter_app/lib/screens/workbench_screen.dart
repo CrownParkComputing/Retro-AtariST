@@ -101,6 +101,9 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
   bool _showKeyboard = false;
   int _diskInDriveA = 0;
 
+  /// Stretch the picture to fill the screen, or keep the ST's 4:3 shape.
+  bool _screenFill = false;
+
   /// Saved positions, keyed by library path -- one per title, so closing one
   /// game never costs you the position of another.
   Map<String, ResumePoint> _resumePoints = const {};
@@ -206,6 +209,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
     final compliance = await AppPrefs.complianceMode();
     final onScreen = await AppPrefs.onScreenControls();
     final sidebarVisible = await AppPrefs.sidebarVisible();
+    final screenFill = await AppPrefs.screenFill();
     SessionStore.useStateDir(Directory(widget.workDir));
     final resumePoints = await SessionStore.loadAll();
     final resume = await SessionStore.loadLast();
@@ -239,6 +243,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
       _complianceMode = compliance;
       _onScreenControls = onScreen;
       _sidebarHidden = !sidebarVisible;
+      _screenFill = screenFill;
       _resumePoints = resumePoints;
       _resumePoint = resume;
     });
@@ -751,6 +756,22 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
               _insertDiskByIndex((_diskInDriveA + 1) % entry.disks.length),
         ),
       tool(
+        // The ST is a 4:3 machine and a handheld is not, so a faithful
+        // picture leaves a quarter of the screen black. Which of those two
+        // annoyances you prefer is genuinely a matter of taste, so it is a
+        // toggle rather than a decision made for the user.
+        icon: _screenFill ? Icons.fit_screen : Icons.aspect_ratio,
+        tip: _screenFill
+            ? "Keep the ST's 4:3 shape"
+            : 'Stretch to fill the screen',
+        active: _screenFill,
+        onPressed: () async {
+          final next = !_screenFill;
+          setState(() => _screenFill = next);
+          await AppPrefs.setScreenFill(next);
+        },
+      ),
+      tool(
         icon: Icons.keyboard,
         tip: 'ST keyboard',
         active: _showKeyboard,
@@ -945,6 +966,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
           accurateFloppy: _config.accurateFloppy,
           showOnScreenControls: _showOnScreenControls,
           showKeyboard: _showKeyboard,
+          fillScreen: _screenFill,
           onExit: _exitSession,
           onInsertDisk: _insertDisk,
         );
