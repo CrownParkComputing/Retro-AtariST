@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------- native ----
+# Copied out of vendor/hatari at configure time so Hatari's own
+# ${CMAKE_SOURCE_DIR}/cmake references resolve while it is nested.
+/native/atarist_core/cmake/
+
+# Native build trees, per target.
+/native/atarist_core/*/build/
+/native/atarist_core/*/build-*/
+
+# ---------------------------------------------------------------- flutter ---
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+**/build/
+*.iml
+
+# Android
+/flutter_app/android/.gradle/
+/flutter_app/android/local.properties
+/flutter_app/android/key.properties
+*.jks
+*.keystore
+
+# The compiled cores are BUILD OUTPUT, not source: 18MB per ABI, rebuilt by
+# native/atarist_core/android/build.sh in a couple of minutes.
+/flutter_app/android/app/src/main/jniLibs/
+
+# iOS
+/flutter_app/ios/Pods/
+/flutter_app/ios/.symlinks/
+/flutter_app/ios/Flutter/Flutter.framework/
+/flutter_app/ios/Flutter/Flutter.podspec
+/flutter_app/ios/Flutter/ephemeral/
+/flutter_app/ios/Runner/GeneratedPluginRegistrant.*
+
+# Linux
+/flutter_app/linux/flutter/ephemeral/
+
+# ------------------------------------------------------------------ media ---
+# Belt and braces. No disk image or ROM belongs in this repository: TOS is
+# copyrighted by Atari and the games are the user's own. They live in the
+# games folder and the app's support directory, never here.
+*.st
+*.stx
+*.msa
+*.dim
+*.ipf
+*.img
+*.rom
+*.sav
+*.apk
