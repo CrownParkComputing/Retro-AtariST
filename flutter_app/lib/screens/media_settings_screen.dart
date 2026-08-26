@@ -3,6 +3,7 @@
 // Separate from Machine because these change per session and often mid-game
 // (a multi-disk title asking for disk 2), while the machine settings are set
 // once and forgotten.
+import '../services/storage_permission.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -97,6 +98,9 @@ class MediaSettingsScreen extends StatelessWidget {
               value: config.gemdosDir,
               emptyText: 'not fitted',
               onPick: () async {
+                // Ask for the access first: the system picker will happily hand
+                // back an SD-card path the app then cannot read.
+                if (!await StoragePermission.ensure()) return;
                 final dir = await FilePicker.platform.getDirectoryPath(
                     dialogTitle: 'Choose a folder to mount as drive C');
                 if (dir != null) onChanged(config.copyWith(gemdosDir: dir));
