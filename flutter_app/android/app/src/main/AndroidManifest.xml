@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- The library is read IN PLACE from wherever the user keeps it -- often
+    <!-- The library is read IN PLACE from wherever the user keeps it - often
          an SD card. Scoped storage cannot reach a raw path there, so the app
          asks for all-files access the way Retro-Amiga does. Play requires a
          sensitive-permission declaration for this: "Core functionality",
