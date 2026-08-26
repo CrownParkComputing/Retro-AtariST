@@ -2,6 +2,7 @@
 // SharedPreferences rather than a settings framework: there are a dozen keys,
 // they are independent, and the app has no reactive graph to feed.
 import 'dart:convert';
+import 'dart:ui' show Offset;
 
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -171,5 +172,43 @@ class AppPrefs {
     all[path] = config;
     await prefs.setString('game_configs',
         jsonEncode(all.map((k, v) => MapEntry(k, v.toJson()))));
+  }
+
+  // --- On-screen control positions -------------------------------------
+
+  static const _kControlPositions = 'on_screen_control_positions';
+
+  /// Where each on-screen control sits, as fractions of the play area
+  /// (0..1, centre of the control). Fractions rather than pixels so a
+  /// layout made in landscape still means the same place after a resize or
+  /// on the next device. Same contract as Retro-C64 and Retro-Spectrum.
+  static Future<Map<String, Offset>> controlPositions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_kControlPositions);
+    if (raw == null || raw.isEmpty) return const {};
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      return {
+        for (final e in decoded.entries)
+          e.key: Offset(
+            ((e.value as List)[0] as num).toDouble(),
+            ((e.value as List)[1] as num).toDouble(),
+          ),
+      };
+    } catch (_) {
+      return const {};
+    }
+  }
+
+  static Future<void> setControlPosition(String id, Offset fraction) async {
+    final prefs = await SharedPreferences.getInstance();
+    final all = Map<String, Offset>.from(await controlPositions());
+    all[id] = fraction;
+    await prefs.setString(
+      _kControlPositions,
+      jsonEncode({
+        for (final e in all.entries) e.key: [e.value.dx, e.value.dy],
+      }),
+    );
   }
 }

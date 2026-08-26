@@ -1,4 +1,5 @@
 // Turns a folder of ST software into library entries.
+import 'dart:isolate';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -82,7 +83,15 @@ class LibraryScanner {
     return a.toLowerCase().compareTo(b.toLowerCase());
   }
 
-  static Future<ScanResult> scan(String rootPath) async {
+  /// Runs on a background isolate: the walk crosses the games folder
+  /// (often an SD card), and on the UI isolate every busy moment of the
+  /// card was a dropped frame -- the stall class the Amiga live release
+  /// taught us to move off the UI thread entirely.
+  static Future<ScanResult> scan(String rootPath) =>
+      Isolate.run(() => scanSync(rootPath));
+
+  /// The walk itself, synchronous, for the isolate (and for tests).
+  static Future<ScanResult> scanSync(String rootPath) async {
     final root = Directory(rootPath);
     if (!root.existsSync()) return const ScanResult([], []);
 

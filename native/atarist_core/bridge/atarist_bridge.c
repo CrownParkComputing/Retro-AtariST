@@ -13,6 +13,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/resource.h>
+#include <sys/syscall.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -310,8 +312,34 @@ static void build_args(ArgList *a, const AtariStConfig *cfg)
 
 /* ----------------------------------------------------------- emu thread */
 
+/* Lift the emulation thread above ordinary background work.
+ *
+ * Hatari runs in-process beside Flutter's UI and raster threads; at equal
+ * priority a busy launcher frame starves the audio producer and the sound
+ * breaks up -- the exact failure Retro-Amiga's live release reports were
+ * about, fixed there with the same call. -2 lifts this thread above default
+ * work while leaving the platform's audio callback (higher still) alone.
+ *
+ * An app may do this to its own threads: Android raises RLIMIT_NICE for app
+ * processes precisely so it can. Where it may not (an unprivileged desktop)
+ * the call fails and the emulator runs exactly as it did.
+ */
+static void raise_emulation_thread_priority(void)
+{
+#if defined(__linux__)
+	errno = 0;
+	if (setpriority(PRIO_PROCESS, (id_t)syscall(SYS_gettid), -2) != 0 &&
+	    errno != 0) {
+		fprintf(stderr,
+		        "atarist: could not raise emulation thread priority (%s)\n",
+		        strerror(errno));
+	}
+#endif
+}
+
 static void *emu_thread_main(void *unused)
 {
+	raise_emulation_thread_priority();
 	(void)unused;
 
 	ArgList args;

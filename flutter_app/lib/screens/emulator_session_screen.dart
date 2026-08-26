@@ -74,6 +74,16 @@ class _EmulatorSessionScreenState extends State<EmulatorSessionScreen> {
   bool _screenFill = false;
   int _diskInDriveA = 0;
 
+  /// Session override for the on-screen pad. Null follows the Input
+  /// setting (auto hides it while a controller is connected); the rail's
+  /// Pad button pins it on or off for this session -- a manual choice
+  /// wins, the model Retro-Dosbox proved out.
+  bool? _padOverride;
+
+  /// Layout mode: the pad's clusters drag instead of press, and moves are
+  /// remembered.
+  bool _editingLayout = false;
+
   /// The pause menu: machine stopped, picture dimmed, choices pinned up.
   bool _menuOpen = false;
 
@@ -180,11 +190,13 @@ class _EmulatorSessionScreenState extends State<EmulatorSessionScreen> {
                     title: entry.title,
                     disks: entry.disks,
                     accurateFloppy: widget.accurateFloppy,
-                    showOnScreenControls: switch (widget.onScreenControls) {
-                      OnScreenControls.always => true,
-                      OnScreenControls.never => false,
-                      OnScreenControls.auto => !padConnected,
-                    },
+                    showOnScreenControls: _padOverride ??
+                        switch (widget.onScreenControls) {
+                          OnScreenControls.always => true,
+                          OnScreenControls.never => false,
+                          OnScreenControls.auto => !padConnected,
+                        },
+                    editingLayout: _editingLayout,
                     showKeyboard: _showKeyboard,
                     fillScreen: _screenFill,
                     onExit: () => unawaited(_close()),
@@ -318,6 +330,36 @@ class _EmulatorSessionScreenState extends State<EmulatorSessionScreen> {
             final next = !_screenFill;
             setState(() => _screenFill = next);
             unawaited(AppPrefs.setScreenFill(next));
+          },
+        ),
+        _RailTool(
+          icon: Icons.videogame_asset,
+          label: 'Pad',
+          lit: _padOverride ?? false,
+          tooltip: 'On-screen joystick',
+          onTap: () {
+            _wakeControls();
+            setState(() {
+              // Cycle: follow-the-setting -> pinned on -> pinned off.
+              _padOverride = switch (_padOverride) {
+                null => true,
+                true => false,
+                false => null,
+              };
+              if (_padOverride == false) _editingLayout = false;
+            });
+          },
+        ),
+        _RailTool(
+          icon: _editingLayout ? Icons.check : Icons.open_with,
+          label: 'Layout',
+          lit: _editingLayout,
+          tooltip: _editingLayout
+              ? 'Finish moving controls'
+              : 'Move the on-screen controls',
+          onTap: () {
+            _wakeControls();
+            setState(() => _editingLayout = !_editingLayout);
           },
         ),
         _RailTool(
