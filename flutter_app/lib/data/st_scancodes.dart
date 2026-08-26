@@ -240,29 +240,61 @@ class StScancode {
   /// is used to type things like a game's copy-protection answer or a
   /// cheat-mode key sequence, both of which are documented in terms of where
   /// the key is on an ST.
+  ///
+  /// This is the FULL Atari ST keyboard, grouped the way it sits on the real
+  /// machine: the alphanumerics and modifiers in the four main rows, the ten
+  /// function keys across the top, then the cursor/HELP/UNDO cluster and the
+  /// numeric keypad. The whole board is drawn as ONE FittedBox with the rows
+  /// locked together -- independent per-row scrollers slid out of alignment
+  /// and never read as a keyboard.
   static const List<List<(String, int)>> onScreenRows = [
+    // Function keys -- every ST title that binds them uses the top row.
+    [
+      ('F1', f1), ('F2', f2), ('F3', f3), ('F4', f4), ('F5', f5),
+      ('F6', f6), ('F7', f7), ('F8', f8), ('F9', f9), ('F10', f10),
+    ],
+    // Main alphanumeric block, row 1: ESC 1..0 - = BS
     [
       ('ESC', escape), ('1', key1), ('2', key2), ('3', key3), ('4', key4),
       ('5', key5), ('6', key6), ('7', key7), ('8', key8), ('9', key9),
       ('0', key0), ('-', minus), ('=', equals), ('BS', backspace),
     ],
+    // Main alphanumeric block, row 2: TAB Q..P [ ]
     [
       ('TAB', tab), ('Q', q), ('W', w), ('E', e), ('R', r), ('T', t),
       ('Y', y), ('U', u), ('I', i), ('O', o), ('P', p),
       ('[', bracketLeft), (']', bracketRight),
     ],
+    // Main alphanumeric block, row 3: CTRL A..L ; ' RET
     [
       ('CTRL', control), ('A', a), ('S', s), ('D', d), ('F', f), ('G', g),
       ('H', h), ('J', j), ('K', k), ('L', l), (';', semicolon),
       ("'", quote), ('RET', enter),
     ],
+    // Main alphanumeric block, row 4: SHIFT Z..M , . / SHIFT
     [
       ('SHIFT', leftShift), ('Z', z), ('X', x), ('C', c), ('V', v),
       ('B', b), ('N', n), ('M', m), (',', comma), ('.', period),
       ('/', slash), ('SHIFT', rightShift),
     ],
+    // Modifiers + bottom action keys.
     [
-      ('ALT', alternate), ('SPACE', space), ('HELP', help), ('UNDO', undo),
+      ('ALT', alternate), ('CAPS', capsLock), ('SPACE', space),
+      ('HELP', help), ('UNDO', undo),
+    ],
+    // Cursor cluster: HELP/UNDO live above these on the real board, and
+    // INSERT/HOME/DELETE are the keys a lot of copy-protection prompts ask
+    // for.
+    [
+      ('INS', insert), ('HOME', home), ('DEL', delete),
+      ('↑', arrowUp), ('←', arrowLeft), ('↓', arrowDown), ('→', arrowRight),
+    ],
+    // Numeric keypad, as its own band -- it has its own scan codes on the ST.
+    [
+      ('7', numpad7), ('8', numpad8), ('9', numpad9), ('-', numpadMinus),
+      ('4', numpad4), ('5', numpad5), ('6', numpad6), ('+', numpadPlus),
+      ('1', numpad1), ('2', numpad2), ('3', numpad3),
+      ('0', numpad0), ('.', numpadPeriod), ('ENT', numpadEnter),
     ],
   ];
 }

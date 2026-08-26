@@ -130,7 +130,16 @@ class _RetroAtariStAppState extends State<RetroAtariStApp> {
           brightness: Brightness.dark,
         ),
       ),
-      home: Scaffold(body: _home()),
+      home: SafeArea(
+        // Respect the Android status bar / notch rather than drawing under it.
+        // Without this the top of the left rail (the "Games" entry) is covered
+        // by the system clock and notification icons on the Retroid.
+        top: true,
+        bottom: false,
+        left: true,
+        right: true,
+        child: _home(),
+      ),
     );
   }
 
