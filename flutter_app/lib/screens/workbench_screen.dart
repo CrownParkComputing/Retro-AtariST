@@ -22,7 +22,7 @@ import '../widgets/sidebar.dart';
 import '../widgets/sidebar_style.dart';
 import 'about_screen.dart';
 import 'compliance_screen.dart';
-import 'emulator_screen.dart';
+import 'emulator_session_screen.dart';
 import 'input_settings_screen.dart';
 import 'library_grid.dart';
 import 'machine_settings_screen.dart';
@@ -87,6 +87,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
   StMachineConfig _config = const StMachineConfig();
   bool _complianceMode = false;
   List<TosRom> _roms = const [];
+  List<String> _volumeChoices = const [];
 
   GameEntry? _running;
   String? _error;
@@ -95,14 +96,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
   /// deliberately: it is the only way back once the rail is gone, so it
   /// cannot live inside the rail it controls.
   bool _sidebarHidden = false;
-
-  /// Session state lifted out of EmulatorScreen, because the buttons that
-  /// drive it now live in the bottom bar rather than inside that screen.
-  bool _showKeyboard = false;
-  int _diskInDriveA = 0;
-
-  /// Stretch the picture to fill the screen, or keep the ST's 4:3 shape.
-  bool _screenFill = false;
 
   /// Saved positions, keyed by library path -- one per title, so closing one
   /// game never costs you the position of another.
@@ -119,17 +112,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
   /// beside a machine that had in fact been paused for two minutes is exactly
   /// the reading that sends you looking for a bug in the emulator.
   Timer? _statusTicker;
-
-  /// Whether the bar beneath the window is showing.
-  ///
-  /// It fades out after [_chromeIdle] of no input WHILE A MACHINE IS RUNNING,
-  /// and any touch brings it straight back. Only while running: hiding the
-  /// bar in the library would strand the user, because the rail's show/hide
-  /// toggle lives in it.
-  bool _chromeVisible = true;
-  Timer? _chromeTimer;
-
-  static const Duration _chromeIdle = Duration(seconds: 3);
 
   /// External controllers. Owned here rather than by the emulator screen so
   /// detection keeps running while the user is in the library -- otherwise
@@ -176,23 +158,8 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
     if (mounted) setState(() {});
   }
 
-  /// Show the bar and restart its countdown. Called on every pointer event.
-  void _wakeChrome() {
-    _chromeTimer?.cancel();
-    _chromeTimer = Timer(_chromeIdle, () {
-      // Re-checked at fire time rather than when the timer was armed: the
-      // machine may have been stopped in between, and hiding the bar with
-      // nothing running takes the sidebar toggle away for good.
-      if (mounted && widget.core.isRunning && _running != null) {
-        setState(() => _chromeVisible = false);
-      }
-    });
-    if (!_chromeVisible && mounted) setState(() => _chromeVisible = true);
-  }
-
   @override
   void dispose() {
-    _chromeTimer?.cancel();
     _padMask?.cancel();
     _padKeys?.cancel();
     _gamepads.connected.removeListener(_onControllerChanged);
@@ -209,7 +176,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
     final compliance = await AppPrefs.complianceMode();
     final onScreen = await AppPrefs.onScreenControls();
     final sidebarVisible = await AppPrefs.sidebarVisible();
-    final screenFill = await AppPrefs.screenFill();
+    final volumes = await GamesFolder.candidates();
     SessionStore.useStateDir(Directory(widget.workDir));
     final resumePoints = await SessionStore.loadAll();
     final resume = await SessionStore.loadLast();
@@ -243,7 +210,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
       _complianceMode = compliance;
       _onScreenControls = onScreen;
       _sidebarHidden = !sidebarVisible;
-      _screenFill = screenFill;
+      _volumeChoices = volumes;
       _resumePoints = resumePoints;
       _resumePoint = resume;
     });
@@ -340,9 +307,34 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
       _config = config;
       _running = entry;
       _error = null;
-      _tab = WorkbenchTab.running;
     });
-    _wakeChrome();
+    unawaited(_openSession());
+  }
+
+  /// Hands the session its own screen -- the family pattern shared with
+  /// the other Retro-* front ends. Every way into a game funnels through
+  /// here, so pausing and closing land back on the workbench in exactly
+  /// one place; the engine-side work stays in [_pauseToResume] and
+  /// [_exitSession], which the session screen calls before it pops.
+  Future<void> _openSession() async {
+    final running = _running;
+    if (running == null || !mounted) return;
+    await Navigator.of(context).push<SessionExit>(
+      MaterialPageRoute<SessionExit>(
+        fullscreenDialog: true,
+        builder: (BuildContext context) => EmulatorSessionScreen(
+          core: widget.core,
+          entry: running,
+          accurateFloppy: _config.accurateFloppy,
+          onScreenControls: _onScreenControls,
+          controllerConnected: _gamepads.connected,
+          onInsertDisk: _insertDisk,
+          onSaveAndExit: _pauseToResume,
+          onClose: _exitSession,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   /// Puts [path] in [drive] of the running machine.
@@ -402,17 +394,14 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
     return true;
   }
 
-  /// Pause and keep your place: save, stop, and land back in the library.
-  Future<void> _pauseToResume() async {
-    if (!await _captureResumePoint()) return;
+  /// Save and exit, engine side: capture the resume point and stop. The
+  /// session screen navigates; this only changes what is running.
+  Future<bool> _pauseToResume() async {
+    if (!await _captureResumePoint()) return false;
     widget.core.stop();
-    if (!mounted) return;
-    _chromeTimer?.cancel();
-    setState(() {
-      _running = null;
-      _chromeVisible = true;
-      _tab = WorkbenchTab.games;
-    });
+    if (!mounted) return true;
+    setState(() => _running = null);
+    return true;
   }
 
   /// Put the user back exactly where they left off.
@@ -456,9 +445,8 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
         path: point.gamePath,
         kind: GameKind.floppy,
       );
-      _diskInDriveA = 0;
-      _tab = WorkbenchTab.running;
     });
+    unawaited(_openSession());
   }
 
   Future<void> _discardResume([String? gamePath]) async {
@@ -477,13 +465,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
     });
   }
 
-  void _insertDiskByIndex(int index) {
-    final entry = _running;
-    if (entry == null || index < 0 || index >= entry.disks.length) return;
-    _insertDisk(0, entry.disks[index]);
-    setState(() => _diskInDriveA = index);
-  }
-
   /// Leave the game.
   ///
   /// Saves your position on the way out rather than discarding it: there is
@@ -494,10 +475,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
     await _captureResumePoint();
     widget.core.stop();
     if (!mounted) return;
-    setState(() {
-      _running = null;
-      _tab = WorkbenchTab.games;
-    });
+    setState(() => _running = null);
   }
 
   /// True when the lifecycle handler paused the core, as opposed to the user
@@ -585,15 +563,9 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
     var index = tabs.indexOf(_tab);
     if (index < 0) index = 0;
 
-    // Listener, not GestureDetector: it observes pointer events on the way
-    // through without competing for them, so the ST mouse drag, the on-screen
-    // joystick and the keyboard overlay all still work while every touch also
-    // wakes the bar.
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _wakeChrome(),
-      onPointerMove: (_) => _wakeChrome(),
-      child: Column(
+    // The session has its own screen now (EmulatorSessionScreen); the
+    // workbench is only ever the launcher.
+    return Column(
       children: [
         if (widget.usingStub) const _StubBanner(),
         Expanded(
@@ -623,35 +595,17 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
             ),
           ),
         ),
-        // Fades rather than vanishes, and the space collapses with it so the
-        // ST picture grows into it -- a bar that merely goes invisible would
-        // leave a black band under the game.
-        AnimatedSize(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOut,
-          alignment: Alignment.topCenter,
-          child: AnimatedOpacity(
-            opacity: _chromeVisible ? 1 : 0,
-            duration: const Duration(milliseconds: 180),
-            child: _chromeVisible
-                ? _bottomBar()
-                : const SizedBox(width: double.infinity, height: 0),
-          ),
-        ),
+        _bottomBar(),
       ],
-      ),
     );
   }
 
-  /// The strip beneath the window: the rail's show/hide toggle on the left,
-  /// and the session tools on the right while a machine is running.
-  ///
-  /// Outside both the rail and the content panel, deliberately, and copied in
-  /// shape from Retro-Amiga. Two reasons it cannot live inside the rail:
-  /// the toggle is the only way back once the rail is hidden, and the session
-  /// tools belong under the picture rather than floating over it.
+  /// The strip beneath the window: the rail's show/hide toggle on the left
+  /// and the last session's status. Outside both the rail and the content
+  /// panel, deliberately -- the toggle is the only way back once the rail is
+  /// hidden, so it cannot live inside the rail it controls. Sessions run on
+  /// their own screen now, so this is launcher chrome only.
   Widget _bottomBar() {
-    final running = widget.core.isRunning && _running != null;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         RetroAtariStMetrics.rootPadding,
@@ -660,10 +614,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
         6,
       ),
       child: SizedBox(
-        // A little taller while the machine is running -- the buttons are
-        // still finger sized -- but only a little: every pixel this strip
-        // takes is a pixel the picture does not get.
-        height: running ? 36 : 28,
+        height: 28,
         child: Row(
           children: [
             IconButton(
@@ -684,13 +635,14 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
             // panel's own content says what it is.
             Expanded(
               child: Text(
-                running ? _sessionStatus() : 'idle',
+                widget.core.isRunning && _running != null
+                    ? _sessionStatus()
+                    : 'idle',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: RetroAtariStTextStyles.statusLine,
               ),
             ),
-            if (running) ..._sessionTools(),
           ],
         ),
       ),
@@ -706,99 +658,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
       if (core.statusLine != null) core.statusLine!,
     ];
     return parts.where((p) => p.isNotEmpty).join('  |  ');
-  }
-
-  /// The in-game toolbar: small round buttons laid out from the right-hand
-  /// edge, under the panel where the rail's toggle already lives.
-  List<Widget> _sessionTools() {
-    final core = widget.core;
-    final entry = _running;
-
-    Widget tool({
-      required IconData icon,
-      required String tip,
-      required VoidCallback onPressed,
-      bool active = false,
-      Color? color,
-    }) {
-      return Padding(
-        padding: const EdgeInsets.only(left: 8),
-        child: Material(
-          color: active
-              ? RetroAtariStColors.accentAtariRed
-              : RetroAtariStColors.selectedFill,
-          shape: const CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          child: Tooltip(
-            message: tip,
-            child: InkWell(
-              onTap: onPressed,
-              // 32px, not FAB-sized: the strip sits under the picture, and a
-              // row of 40px buttons costs the ST a border's worth of height.
-              child: SizedBox(
-                width: 32,
-                height: 32,
-                child: Icon(icon, color: color ?? Colors.white, size: 18),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return <Widget>[
-      if (entry != null && entry.disks.length > 1)
-        tool(
-          icon: Icons.album,
-          tip: 'Disk ${_diskInDriveA + 1} of ${entry.disks.length}'
-              ' -- tap for the next one',
-          onPressed: () =>
-              _insertDiskByIndex((_diskInDriveA + 1) % entry.disks.length),
-        ),
-      tool(
-        // The ST is a 4:3 machine and a handheld is not, so a faithful
-        // picture leaves a quarter of the screen black. Which of those two
-        // annoyances you prefer is genuinely a matter of taste, so it is a
-        // toggle rather than a decision made for the user.
-        icon: _screenFill ? Icons.fit_screen : Icons.aspect_ratio,
-        tip: _screenFill
-            ? "Keep the ST's 4:3 shape"
-            : 'Stretch to fill the screen',
-        active: _screenFill,
-        onPressed: () async {
-          final next = !_screenFill;
-          setState(() => _screenFill = next);
-          await AppPrefs.setScreenFill(next);
-        },
-      ),
-      tool(
-        icon: Icons.keyboard,
-        tip: 'ST keyboard',
-        active: _showKeyboard,
-        onPressed: () => setState(() => _showKeyboard = !_showKeyboard),
-      ),
-      tool(
-        icon: core.isPaused ? Icons.play_arrow : Icons.pause_circle_outline,
-        tip: core.isPaused ? 'Resume' : 'Pause the picture',
-        onPressed: () => setState(() => core.setPaused(!core.isPaused)),
-      ),
-      tool(
-        icon: Icons.bookmark_add_outlined,
-        tip: 'Pause and keep your place',
-        onPressed: _pauseToResume,
-      ),
-      tool(
-        icon: Icons.restart_alt,
-        tip: 'Reset the machine',
-        onPressed: () => core.reset(),
-      ),
-      tool(
-        icon: Icons.close,
-        tip: 'Exit to the library',
-        color: RetroAtariStColors.danger,
-        onPressed: _exitSession,
-      ),
-    ];
   }
 
   /// The way back into whatever the user stepped away from.
@@ -863,23 +722,6 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
         ),
       ],
     );
-  }
-
-  /// Whether to draw the on-screen stick over the picture.
-  ///
-  /// `auto` hides it while a controller is connected. That is the behaviour
-  /// worth defaulting to: the on-screen pad covers a corner of a 320x200
-  /// picture, which on a small screen is a real cost to pay for controls
-  /// nobody is using.
-  bool get _showOnScreenControls {
-    switch (_onScreenControls) {
-      case OnScreenControls.always:
-        return true;
-      case OnScreenControls.never:
-        return false;
-      case OnScreenControls.auto:
-        return !_gamepads.connected.value;
-    }
   }
 
   Widget _railFooter() {
@@ -959,16 +801,14 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
                 style: TextStyle(color: RetroAtariStColors.textMuted)),
           );
         }
-        return EmulatorScreen(
-          core: widget.core,
-          title: running.title,
-          disks: running.disks,
-          accurateFloppy: _config.accurateFloppy,
-          showOnScreenControls: _showOnScreenControls,
-          showKeyboard: _showKeyboard,
-          fillScreen: _screenFill,
-          onExit: _exitSession,
-          onInsertDisk: _insertDisk,
+        // The machine is alive on its own screen; this tab only exists as
+        // a way back to it.
+        return Center(
+          child: TextButton.icon(
+            onPressed: () => unawaited(_openSession()),
+            icon: const Icon(Icons.play_arrow),
+            label: Text('Return to ${running.title}'),
+          ),
         );
 
       case WorkbenchTab.resume:
@@ -1013,6 +853,7 @@ class _WorkbenchScreenState extends State<WorkbenchScreen>
           gamesFolder: _gamesFolder,
           workDir: widget.workDir,
           tosDir: widget.tosDir,
+          volumeChoices: _volumeChoices,
           onGamesFolderChanged: (dir) async {
             await AppPrefs.setGamesFolder(dir);
             setState(() => _gamesFolder = dir);
