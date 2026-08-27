@@ -1,0 +1,123 @@
+name: Build
+
+# Same shape as the Retro-C64 and Retro-Saturn pipelines: analyze and test on
+# every push, build the Android artefacts, and turn a v* tag into a GitHub
+# Release carrying them. Signing is optional so forks and PRs still build -
+# with the ANDROID_KEYSTORE_* secrets set the APK/AAB are release-signed,
+# without them the debug key answers (sideloadable, not Play-uploadable).
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FLUTTER_VERSION: '3.41.9'
+
+jobs:
+  analyze:
+    name: Analyze & test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+      - name: Install dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+      - name: Analyze
+        working-directory: flutter_app
+        run: flutter analyze --no-fatal-infos
+      - name: Unit tests
+        working-directory: flutter_app
+        run: |
+          if [ -d test ]; then flutter test; else echo "no test directory"; fi
+
+  android:
+    name: Android (APK + AAB)
+    runs-on: ubuntu-latest
+    needs: analyze
+    env:
+      HAS_ANDROID_SIGNING: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Set up release signing
+        if: env.HAS_ANDROID_SIGNING == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > flutter_app/android/app/upload-keystore.jks
+          cat > flutter_app/android/key.properties <<PROPS
+          storeFile=upload-keystore.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          PROPS
+          # The gradle here also understands the same values as env vars.
+          {
+            echo "ANDROID_KEYSTORE_PATH=$PWD/flutter_app/android/app/upload-keystore.jks"
+            echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD"
+            echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS"
+            echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD"
+          } >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+      - name: Build APK
+        working-directory: flutter_app
+        run: flutter build apk --release
+      - name: Build AAB
+        working-directory: flutter_app
+        run: flutter build appbundle --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: flutter_app/build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: flutter_app/build/app/outputs/bundle/release/*.aab
+          if-no-files-found: error
+
+  release:
+    name: GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: android
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create release with artefacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            artifacts/android-apk/*.apk artifacts/android-aab/*.aab
