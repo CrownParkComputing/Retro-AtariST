@@ -4,8 +4,8 @@
  * Everything not named here is local. Hatari contributes thousands of symbols
  * to this library and a good number of them have names common enough to
  * collide with the host process -- `main`, `select`, `debug`, `Log_Printf`.
- * On Android all of that shares one namespace with Flutter's engine and every
- * other plugin, so hiding them is a correctness requirement, not hygiene.
+ * On Android all of that shares one namespace with every native dependency,
+ * so hiding them is a correctness requirement, not hygiene.
  *
  * Keep in step with bridge/atarist_bridge.h. A function declared there and
  * missing here links fine and then fails at dlsym time with "symbol not

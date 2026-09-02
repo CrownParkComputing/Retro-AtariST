@@ -6,7 +6,7 @@
  *   - Oboe is C++ and would pull a C++ runtime into a library that is
  *     otherwise pure C, for a wrapper over the same AAudio underneath. Oboe's
  *     real value is falling back to OpenSL ES on API < 26; this app already
- *     needs API 24+ for Flutter and nothing older is a realistic ST target.
+ *     targets API 26+ and nothing older is a realistic ST target.
  *   - OpenSL ES is deprecated and higher latency.
  *   - AAudio is in the NDK, is plain C, and adds no dependency at all -- the
  *     library's NEEDED list stays libm/libz/libdl/libc plus libaaudio.

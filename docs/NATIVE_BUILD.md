@@ -5,9 +5,9 @@ git submodule update --init --recursive
 ./native/atarist_core/linux/build.sh
 ```
 
-Output: `native/atarist_core/linux/build/libatarist_core.so`, which is where
-`AtariStNativePaths.coreLibraryPath` looks for it. The launcher runs against a
-stub core without it and says so in a banner, so this is not needed for UI work.
+Output: `native/atarist_core/linux/build/libatarist_core.so`. This host build is
+used for bridge tests and profiling; the iOS application links the same source
+set statically.
 
 ## How the build is wired, and why it looks inside-out
 
@@ -38,7 +38,7 @@ Requires CMake **3.19+** (for `cmake_language(DEFER)`).
 
 ## Object libraries
 
-`libatarist_core` links `Core`, `CoreHmsa`, `Falcon`, `UaeCpu` and `Debug` —
+`atarist_core` links `Core`, `CoreHmsa`, `Falcon`, `UaeCpu` and `Debug` —
 deliberately the same set upstream's own libretro target uses — with `Ui` and
 `GuiSdl` replaced by `backend/`. The build runs `--target atarist_core`, so
 Hatari's `hatari` executable and its SDL front end are configured but never
@@ -60,15 +60,24 @@ is compiled for the target, which is the main reason this project consumes
 Hatari's build rather than re-listing its sources.
 
 ```sh
-export ANDROID_NDK_HOME=~/Android/Sdk/ndk/26.1.10909125
+export ANDROID_NDK_HOME=~/Android/Sdk/ndk/28.2.13676358
 ./native/atarist_core/android/build.sh arm64-v8a
 ./native/atarist_core/android/build.sh armeabi-v7a   # 32-bit handhelds
-./native/atarist_core/ios/build.sh iphoneos arm64   # never yet run
+./ios/build.sh iphoneos -DDEVELOPMENT_TEAM=YOUR_TEAM_ID
 ```
 
-The Android script installs straight into
-`flutter_app/android/app/src/main/jniLibs/<abi>/`, where the OS loader picks it
-up by bare name. Both ABIs are known to build.
+The Android script leaves its output in
+`native/atarist_core/android/prebuilt/<abi>/`. The application build invokes
+the ARM64 core task automatically and then links the NativeActivity shell:
+
+```sh
+cd android
+./gradlew :app:assembleDebug
+```
+
+The generated APK is under `android/app/build/outputs/apk/debug/`. The app uses
+OpenGL ES 3 for Dear ImGui/framebuffer presentation, Android's Storage Access
+Framework for imports, AAudio, and private app storage for downloaded media.
 
 ### Five things Android needed
 
@@ -90,8 +99,8 @@ Each of these failed the build outright, and none is obvious from the source:
 3. **`-lpthread` does not exist on Android.** Bionic puts pthread in libc, so
    the link fails with "unable to find library -lpthread". Same on Apple.
 
-4. **API 26, not Flutter's default 24** — AAudio is 26+. The app's `minSdk` is
-   raised to match; lowering it again without giving the sink a
+4. **API 26** — AAudio is 26+. Any future Android app's `minSdk` must match;
+   lowering it without giving the sink a
    runtime-loaded fallback would crash on load for 24/25 users rather than
    merely running silent. `AAudioStreamBuilder_setUsage` is 28+ and is
    deliberately not called, to avoid pushing the floor higher for a routing
@@ -110,7 +119,7 @@ One sink is compiled per target (`target.cmake` picks):
 |---|---|---|
 | Linux/Windows/macOS | `audio_sink_sdl.c` | SDL is already linked there via Hatari's own `find_package` |
 | Android | `audio_sink_aaudio.c` | AAudio: NDK, plain C, no C++ runtime |
-| iOS / macOS | `audio_sink_ios.m` | RemoteIO Audio Unit — **written but never compiled**, see below |
+| iOS / macOS | `audio_sink_ios.m` | RemoteIO Audio Unit; requires physical-device validation |
 
 `atarist_core_audio_backend()` reports which one is live, and the About screen
 shows it, so silence is diagnosable.
@@ -146,8 +155,9 @@ JIT for Falcon speed without accepting that iOS is then off the table.**
 nm -D --defined-only .../libatarist_core.so | grep -c ' T '
 ```
 
-Must be **25** — the `atarist_core_*` entry points and nothing else. See
-ARCHITECTURE.md for why that matters on Android.
+Must be **29** for shared-library builds — the `atarist_core_*` entry points
+and nothing else. The iOS app links a static archive and does not expose this
+dynamic symbol boundary.
 
 A missing optional dependency does **not** fail the link; it fails at `dlopen`
 with something like `undefined symbol: udev_new`, which reads as a broken

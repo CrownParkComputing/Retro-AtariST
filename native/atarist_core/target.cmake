@@ -1,5 +1,5 @@
 # libatarist_core -- Hatari's emulation core plus this project's UI backend
-# and dart:ffi bridge, as one shared library.
+# and stable C bridge, as one native library.
 #
 # This file is NOT a CMakeLists. It is include()d into Hatari's own top-level
 # directory scope by embed.cmake -- read that first; it explains why the
@@ -59,7 +59,16 @@ set(BRIDGE_SOURCES
 	"${ATARIST_CORE_DIR}/bridge/atarist_bridge.c"
 	"${AUDIO_SINK}")
 
-add_library(atarist_core SHARED
+# The mobile iOS app links the core statically. This avoids an otherwise
+# unnecessary embedded-framework/code-signing boundary and lets the native
+# frontend call the C ABI directly. Other platforms keep the shared library
+# used by their host integration and smoke tests.
+set(ATARIST_CORE_LIBRARY_TYPE SHARED)
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	set(ATARIST_CORE_LIBRARY_TYPE STATIC)
+endif()
+
+add_library(atarist_core ${ATARIST_CORE_LIBRARY_TYPE}
 	${BACKEND_SOURCES}
 	${BRIDGE_SOURCES}
 	$<TARGET_OBJECTS:Core>
@@ -67,6 +76,18 @@ add_library(atarist_core SHARED
 	$<TARGET_OBJECTS:Falcon>
 	$<TARGET_OBJECTS:UaeCpu>
 	$<TARGET_OBJECTS:Debug>)
+
+if(ANDROID)
+	# NDK r28's linux/stddef.h defines __counted_by as a compatibility macro,
+	# while Hatari's log.c probes Clang's similarly named field attribute and
+	# applies it to pointers (where Clang 19 rejects it). The annotation is only
+	# diagnostic metadata, so disable attribute probing for this one object
+	# library rather than patching the Hatari submodule.
+	target_compile_options(Debug PRIVATE
+		"-D__has_attribute(x)=0"
+		-Wno-builtin-macro-redefined
+		-Wno-macro-redefined)
+endif()
 
 set_target_properties(atarist_core PROPERTIES
 	C_STANDARD 11
@@ -155,8 +176,8 @@ endif()
 # "everything else" here is the whole of Hatari, thousands of symbols with
 # names as generic as `main`, `select` and `debug` -- stays local.
 #
-# This is not tidiness. On Android the app, Flutter's engine and every plugin
-# .so share one symbol namespace, and an exported `main` or `select` from an
+# This is not tidiness. On Android the app and every native dependency share
+# one symbol namespace, and an exported `main` or `select` from an
 # emulator core is a genuinely vicious source of crashes in unrelated code.
 # macOS/iOS use a two-level namespace and are safe either way, but hiding
 # costs nothing there.
@@ -168,3 +189,7 @@ endif()
 set_target_properties(atarist_core PROPERTIES
 	C_VISIBILITY_PRESET hidden
 	VISIBILITY_INLINES_HIDDEN ON)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	include("${ATARIST_CORE_DIR}/ios/app.cmake")
+endif()

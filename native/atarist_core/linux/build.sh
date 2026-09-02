@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 # Build libatarist_core.so for the host.
 #
-# The Flutter app finds the result by walking up to the repo root and looking
-# in native/atarist_core/linux/build/ (see AtariStNativePaths.coreLibraryPath),
-# so the output location here is load-bearing, not a convention.
+# Used by native bridge/frontend smoke tests and host-side profiling.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

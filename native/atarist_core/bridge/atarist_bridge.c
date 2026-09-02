@@ -1,5 +1,5 @@
 /*
- * atarist_bridge.c - the dart:ffi-facing implementation.
+ * atarist_bridge.c - the native frontend-facing implementation.
  *
  * Owns the emulation thread, the request mailbox and the input/status state
  * that crosses between it and the UI thread. Everything Hatari's core calls
@@ -314,7 +314,7 @@ static void build_args(ArgList *a, const AtariStConfig *cfg)
 
 /* Lift the emulation thread above ordinary background work.
  *
- * Hatari runs in-process beside Flutter's UI and raster threads; at equal
+ * Hatari runs in-process beside UIKit and Metal; at equal
  * priority a busy launcher frame starves the audio producer and the sound
  * breaks up -- the exact failure Retro-Amiga's live release reports were
  * about, fixed there with the same call. -2 lifts this thread above default
@@ -351,6 +351,12 @@ static void *emu_thread_main(void *unused)
 	Main_Init(args.argc, args.argv);
 
 	atomic_store(&g_atarist.running, true);
+
+	/* Match Hatari's own main(): subsystem initialisation may leave its
+	 * internal bEmulationActive flag paused on a headless/mobile target.
+	 * Without this call the bridge says "running" but never reaches a VBL,
+	 * leaving the frontend permanently at "Booting...". */
+	Main_UnPauseEmulation();
 
 	/* M68000_Start does not return until bQuitProgram is set, which is
 	 * what atarist_core_stop does through the mailbox. */
@@ -629,7 +635,7 @@ void AtariSt_BridgePublishFrame(const uint32_t *pixels, int width, int height,
 	/* The framebuffer is not copied here. backend/screen.c owns the
 	 * buffer for the whole life of the core and atarist_core_get_framebuffer
 	 * hands out a pointer straight into it, so a copy at this point would
-	 * be pure cost -- the Dart side uploads it to a texture and never
+	 * be pure cost -- the native frontend uploads it to a texture and never
 	 * retains it. The frame counter is what tells the UI the contents
 	 * changed, and that is bumped from the VBL service above. */
 }
@@ -739,7 +745,7 @@ int32_t atarist_core_start(const AtariStConfig *cfg)
 		copy_path(g_atarist.work_dir, sizeof(g_atarist.work_dir), cfg->work_dir);
 
 	/* Checked here rather than left to Hatari: without a TOS image Hatari
-	 * exits the process (Main_ErrorExit), which from Flutter's side looks
+	 * exits the process (Main_ErrorExit), which from the frontend looks
 	 * like the app crashing rather than like a missing ROM. */
 	if (!file_exists(g_atarist.cfg_tos)) {
 		AtariSt_BridgeSetError(

@@ -2,13 +2,12 @@
  * atarist_bridge.h - Plain-C-ABI header for the embedded Hatari core.
  *
  * No SDL types, no C++, no JNI, no Atari-side structs leak across this line:
- * everything here is int32_t, const char* and one raw pixel pointer, because
- * this header IS the dart:ffi surface. The Dart side (lib/ffi/) is generated
- * against it by hand and must be kept in step.
+ * everything here is int32_t, const char* and one raw pixel pointer. This is
+ * the complete public surface used by the native C++ frontend.
  *
  * The same header is used by every target -- Linux/Windows/macOS load the
- * resulting shared library by path, Android by bare name out of jniLibs, iOS
- * links it as a framework and resolves through the process namespace.
+ * resulting shared library by path, Android by bare name, and iOS links the
+ * same sources statically into the application.
  *
  * Threading model
  * ---------------
@@ -35,7 +34,7 @@ extern "C" {
 /*
  * The library is built with -fvisibility=hidden so that Hatari's several
  * thousand internal symbols -- including names as generic as `main` and
- * `select` -- cannot collide with Flutter's engine or another plugin inside
+ * `select` -- cannot collide with another dependency inside
  * the single symbol namespace an Android process gives them all. That means
  * OUR entry points have to be re-exported explicitly; without this push,
  * dlsym finds nothing and every binding fails with "symbol not found".
@@ -69,7 +68,7 @@ extern "C" {
 /* ---------------------------------------------------------------- machines */
 
 /* Mirrors Hatari's MACHINETYPE (configuration.h). Kept as our own #defines so
- * the Dart side never has to parse a Hatari header, and so a reordering
+ * the frontend never has to parse a Hatari header, and so a reordering
  * upstream is caught here by the static asserts in atarist_bridge.c rather
  * than silently booting the wrong machine. */
 #define ATARIST_MACHINE_ST       0
@@ -100,7 +99,7 @@ extern "C" {
 #define ATARIST_JOY_FIRE  0x80
 
 /* Snapshot slots. Hatari snapshots are path-based; the bridge layers slots on
- * top so the Dart save-state UI matches the rest of the Retro-* family. */
+ * top so the native save-state UI matches the rest of the Retro-* family. */
 #define ATARIST_SLOT_COUNT 10
 
 /* ------------------------------------------------------------------ config */
@@ -111,7 +110,7 @@ extern "C" {
  * Deliberately a flat struct of scalars and paths rather than a mirror of
  * Hatari's CNF_PARAMS: CNF_PARAMS is ~40 nested structs that change shape
  * between Hatari releases, and pinning our ABI to it would mean re-generating
- * the Dart bindings on every vendor bump. The bridge translates this into
+ * the frontend ABI on every vendor bump. The bridge translates this into
  * Hatari command-line arguments (which are a stable, documented interface)
  * before calling Main_Init.
  *
@@ -270,7 +269,7 @@ double atarist_core_pixel_aspect(void);
 /* --------------------------------------------------------------------- input */
 
 /*
- * Keyboard by ATARI ST scan code (see lib/data/st_scancodes.dart), not by
+ * Keyboard by ATARI ST scan code, not by
  * host keycode and not by character: ST games read the IKBD's make/break
  * codes directly, so anything higher-level loses the key-up half and leaves
  * a game running with a direction held down forever.
@@ -332,7 +331,7 @@ const char *atarist_core_status_line(void);
  * until the next bridge call that can fail. */
 const char *atarist_core_last_error(void);
 
-/* Version of THIS bridge ABI, not of Hatari. The Dart side refuses to bind a
+/* Version of THIS bridge ABI, not of Hatari. The frontend refuses to use a
  * library whose value it does not know, which is what stops a stale .so from
  * a previous build being silently loaded against new bindings. */
 #define ATARIST_BRIDGE_ABI 1

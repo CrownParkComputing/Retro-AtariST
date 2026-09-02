@@ -16,14 +16,37 @@ GPL v2 or later. The full licence text is in `LICENSE`.
 
 ## Not included
 
-* **TOS** -- the Atari ST's operating system ROM. Copyrighted by Atari and
-  supplied by the user.
-* **Commercial games.** The app plays disk images already on the user's device
-  and does not download, link to, or help locate any.
+* **Atari TOS** -- the proprietary Atari operating-system ROM is not bundled.
+  Users may supply an image they are entitled to use instead of EmuTOS.
+* **Commercial games.** No commercial game is bundled. The iOS release runs disk images
+  explicitly imported by the user through Apple's document picker and does not
+  download games. This iOS restriction does not prohibit a separate Android
+  Android release from retaining authenticated, administrator-only RetroMedia downloads;
+  its distributor remains responsible for the necessary content rights.
+
+## Retro-AtariST core demo
+
+The app bundles a project-authored FAT12 test floppy whose source is in
+`native/assets/demo/`. It displays a moving marker under EmuTOS and waits for
+keyboard input. It contains no Atari ROM or third-party game content and is
+distributed under GPL v2 or later.
+
+## Dear ImGui
+
+The native mobile user interface uses **Dear ImGui**, Copyright (c) 2014-2026
+Omar Cornut and contributors, under the MIT License. The vendored source and
+license are in `third_party/imgui/`.
+
+## EmuTOS
+
+The iOS and Android apps bundle the UK 512 KiB image from **EmuTOS 1.4**, the GPLv2 open
+replacement for Atari TOS. Its original README, licence and exact source/archive
+provenance are stored under `native/assets/emutos/`. Corresponding source is
+available from the official EmuTOS 1.4 release page linked there.
 
 ## Referenced but not used
 
 **ASE (Atari System Emulator)**, by The Bit Culture, GPL v3 --
 https://github.com/thebitculture/ase. This project was started from a request
 to build on ASE and consulted it as a reference, but ships none of its code:
-ASE is C#/.NET, which cannot be bridged into Flutter on mobile. See the README.
+ASE is C#/.NET and is not linked into this native iOS application. See the README.

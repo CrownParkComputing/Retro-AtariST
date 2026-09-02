@@ -34,7 +34,7 @@ void Main_RequestQuit(int exitval)
 	 * own shutdown, or a "quit" shortcut. Treated exactly like a stop
 	 * request from the launcher, so the thread unwinds through
 	 * M68000_Start's return and Main_UnInit rather than calling exit()
-	 * and taking the whole Flutter process with it. */
+	 * and taking the whole application process with it. */
 	Main_SetQuitValue(exitval);
 }
 

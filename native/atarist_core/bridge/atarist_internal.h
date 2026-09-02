@@ -1,7 +1,7 @@
 /*
  * atarist_internal.h - state shared between the bridge and the UI backend.
  *
- * Private to native/atarist_core. Nothing here crosses the dart:ffi line;
+ * Private to native/atarist_core. Nothing here crosses the public C ABI;
  * atarist_bridge.h is the only public surface.
  *
  * Why this file exists: Hatari's UI is a *seam*, not a library. The core calls
@@ -131,7 +131,7 @@ typedef struct {
 	char floppy_path[2][1024];
 
 	AtariStConfig cfg;
-	/* Owned copies of every path in cfg: the Dart strings behind the
+	/* Owned copies of every path in cfg: the caller strings behind the
 	 * pointers passed to atarist_core_start are freed as soon as that call
 	 * returns, and the emulation thread reads them long afterwards. */
 	char cfg_tos[1024];

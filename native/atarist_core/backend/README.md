@@ -11,7 +11,7 @@ ships two implementations of that seam:
 | `src/retro/`   | libretro callbacks (experimental: it does not push video, and `retro_serialize` returns `false`) |
 
 This directory is the **third**: it renders into memory, takes its input from
-the Flutter launcher, and hands both to `../bridge/` for dart:ffi.
+the native launcher, and hands both to `../bridge/` through its stable C ABI.
 
 The consequence worth stating plainly: **no file under `vendor/hatari` is
 patched by this project.** We are a peer of `src/sdl/`, not a modification of

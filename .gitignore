@@ -7,34 +7,20 @@
 /native/atarist_core/*/build/
 /native/atarist_core/*/build-*/
 
-# ---------------------------------------------------------------- flutter ---
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
+# ------------------------------------------------------------------ builds ---
 **/build/
-*.iml
+/ios/build/
+/ios/RetroAtariST/LocalCredentials.h
+/a.out
 
-# Android
-/flutter_app/android/.gradle/
-/flutter_app/android/local.properties
-/flutter_app/android/key.properties
+# Android application and core outputs.
+/android/.gradle/
+/android/app/.cxx/
+/android/local.properties
+/android/key.properties
 *.jks
 *.keystore
-
-# The compiled cores are BUILD OUTPUT, not source: 18MB per ABI, rebuilt by
-# native/atarist_core/android/build.sh in a couple of minutes.
-/flutter_app/android/app/src/main/jniLibs/
-
-# iOS
-/flutter_app/ios/Pods/
-/flutter_app/ios/.symlinks/
-/flutter_app/ios/Flutter/Flutter.framework/
-/flutter_app/ios/Flutter/Flutter.podspec
-/flutter_app/ios/Flutter/ephemeral/
-/flutter_app/ios/Runner/GeneratedPluginRegistrant.*
-
-# Linux
-/flutter_app/linux/flutter/ephemeral/
+/native/atarist_core/android/prebuilt/
 
 # ------------------------------------------------------------------ media ---
 # Belt and braces. No disk image or ROM belongs in this repository: TOS is
@@ -46,6 +32,7 @@
 *.dim
 *.ipf
 *.img
+!/native/assets/emutos/*.img
 *.rom
 *.sav
 *.apk

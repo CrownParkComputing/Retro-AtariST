@@ -3,11 +3,11 @@
  *
  * Almost inert by design. src/sdl/keymap.c is large because it has to turn
  * host keysyms into ST scan codes across three mapping modes and a user remap
- * file. The launcher does that translation itself, in Dart
- * (lib/data/st_scancodes.dart), and hands the bridge finished ST scan codes --
+ * file. The native frontend does that translation itself and hands the bridge
+ * finished ST scan codes --
  * so there is nothing left to map here.
  *
- * Doing it on the Dart side is not an arbitrary split: the on-screen keyboard
+ * Doing it in the frontend is not an arbitrary split: the on-screen keyboard
  * and the gamepad-to-key bindings are both UI concepts that already need the
  * ST key layout, and having the mapping in one place stops the physical and
  * virtual keyboards drifting apart.
@@ -71,7 +71,7 @@ void Keymap_LoadRemapFile(const char *pszFileName)
 void Keymap_SimulateCharacter(char asckey, bool press)
 {
 	/* Used by Hatari's own paste/auto-type paths. The ASCII-to-scan-code
-	 * table lives in Dart, so route it back out through the same queue the
+	 * table lives in the frontend, so route it back out through the same queue the
 	 * launcher uses rather than duplicating the table here. */
 	(void)asckey;
 	(void)press;

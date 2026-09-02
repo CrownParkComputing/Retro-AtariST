@@ -3,7 +3,7 @@
  *
  * Modelled on src/retro/screen.c, with one deliberate difference: there is no
  * push callback. libretro's host calls retro_run and expects video_refresh_cb
- * inside it; our host is a Flutter UI on another thread that samples at its
+ * inside it; our host is a Metal UI on another thread that samples at its
  * own refresh rate. So the buffer stays put and the launcher reads it, which
  * also means an idle GEM desktop costs nothing at all -- the frame counter
  * does not move and the UI never uploads a texture.
@@ -57,8 +57,9 @@ static _Atomic int32_t screen_height = 200;
 void Screen_GetPixelFormat(uint32_t *rmask, uint32_t *gmask, uint32_t *bmask,
                            int *rshift, int *gshift, int *bshift)
 {
-	/* XRGB8888, matching what Flutter's ui.decodeImageFromPixels wants
-	 * after the byte swap in framebuffer_view.dart. */
+	/* Opaque XRGB8888. In little-endian memory this is BGRA8, which both
+	 * mobile shells upload directly; the high byte must be 0xff or ImGui's
+	 * texture blend makes the otherwise valid framebuffer transparent. */
 	if (rmask) *rmask = 0x00FF0000;
 	if (gmask) *gmask = 0x0000FF00;
 	if (bmask) *bmask = 0x000000FF;
@@ -69,7 +70,7 @@ void Screen_GetPixelFormat(uint32_t *rmask, uint32_t *gmask, uint32_t *bmask,
 
 uint32_t Screen_MapRGB(uint8_t red, uint8_t green, uint8_t blue)
 {
-	return ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
+	return 0xff000000u | ((uint32_t)red << 16) | ((uint32_t)green << 8) | blue;
 }
 
 void Screen_GetDimension(uint32_t **pixels, int *width, int *height, int *pitch)
@@ -226,7 +227,7 @@ bool Screen_ShowCursor(bool show)
 	return false;
 }
 
-/* ======================= public (dart:ffi) video API ======================= */
+/* ========================= public C ABI video API ========================= */
 
 const uint32_t *atarist_core_get_framebuffer(int32_t *out_width,
                                              int32_t *out_height,

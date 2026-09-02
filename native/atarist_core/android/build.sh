@@ -1,27 +1,24 @@
 #!/usr/bin/env bash
-# Cross-build libatarist_core.so for Android and drop it into the Flutter
-# app's jniLibs, where the OS loader picks it up by bare name.
+# Cross-build libatarist_core.so for the native Android shell.
 #
 # Builds one ABI at a time; pass it as $1 (default arm64-v8a).
 #
 #   arm64-v8a    every modern device
 #   armeabi-v7a  the cheap 32-bit handhelds this family gets used on
-#   x86_64       the Android emulator -- without it the emulator silently
-#                falls back to the stub core, which looks like a broken
-#                emulator rather than a missing ABI
+#   x86_64       the Android emulator
 #
 # Build all three with:
 #   for abi in arm64-v8a armeabi-v7a x86_64; do ./build.sh $abi; done
 set -euo pipefail
 
 abi="${1:-arm64-v8a}"
-# 26, not Flutter's default 24, because AAudio is API 26+ ("error: unavailable:
+# 26 because AAudio is API 26+ ("error: unavailable:
 # introduced in Android 26"). The alternatives were worse: dlopen'ing ~15
 # AAudio entry points to keep API 24 alive, or shipping Android silent. API 26
 # is Android 8.0, from 2017 -- the set of devices that lose out is vanishingly
 # small next to the cost of either.
 #
-# The app's minSdk must match: see flutter_app/android/app/build.gradle.kts.
+# The native Android app's minSdk must match.
 api="${ANDROID_API:-26}"
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -31,6 +28,15 @@ root="$(cd "$core/../.." && pwd)"
 : "${ANDROID_NDK_HOME:?set ANDROID_NDK_HOME to your NDK, e.g. \$HOME/Android/Sdk/ndk/26.1.10909125}"
 
 build="$here/build-$abi"
+ndk_stamp="$build/.retro-atarist-ndk"
+# CMake cannot switch Android toolchains in an existing build tree. Keep a
+# small stamp because merely changing CMAKE_TOOLCHAIN_FILE updates the cache
+# while leaving CMakeSystem.cmake pointed at the previous NDK.
+if [ -d "$build" ] && { [ ! -f "$ndk_stamp" ] || [ "$(<"$ndk_stamp")" != "$ANDROID_NDK_HOME" ]; }; then
+	cmake -E remove_directory "$build"
+fi
+mkdir -p "$build"
+printf '%s\n' "$ANDROID_NDK_HOME" > "$ndk_stamp"
 # Two accommodations for a platform with no SDL:
 #
 #   SDL2_DIR -> our empty SDL2Config.cmake, because Hatari's CMake
@@ -57,7 +63,7 @@ cmake -S "$root/vendor/hatari" -B "$build" \
 	"${@:2}"
 cmake --build "$build" --target atarist_core --parallel "$(nproc)"
 
-dest="$root/flutter_app/android/app/src/main/jniLibs/$abi"
+dest="$here/prebuilt/$abi"
 mkdir -p "$dest"
 
 # Stripped, and the difference is not marginal: Hatari's CMake emits debug

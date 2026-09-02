@@ -5,7 +5,7 @@
  * framebuffer, below the picture, which would mean the launcher either
  * displays Hatari's chrome inside the emulated screen or crops it back off
  * again. Instead the same information is published as text and LED state for
- * the Flutter status bar to draw in the app's own style.
+ * the native status bar to draw in the app's own style.
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
