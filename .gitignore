@@ -23,10 +23,11 @@
 /native/atarist_core/android/prebuilt/
 
 # ------------------------------------------------------------------ media ---
-# Belt and braces. No disk image or ROM belongs in this repository: TOS is
-# copyrighted by Atari and the games are the user's own. They live in the
-# games folder and the app's support directory, never here.
+# Belt and braces. No commercial/user disk image or ROM belongs in this
+# repository: TOS is copyrighted by Atari and the games are the user's own.
+# The one exception is our source-built, redistributable core demonstration.
 *.st
+!/native/assets/demo/retro-atarist-core-demo.st
 *.stx
 *.msa
 *.dim
