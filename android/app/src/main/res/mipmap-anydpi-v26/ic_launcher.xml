@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The full artwork is deliberately the background layer so Android does
+         not add the large inset reserved for adaptive foreground artwork. -->
+    <background android:drawable="@drawable/ic_launcher_fullbleed" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

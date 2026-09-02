@@ -11,6 +11,7 @@
         android:allowBackup="true"
         android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="Retro-AtariST"
         android:theme="@style/AppTheme">
         <activity
