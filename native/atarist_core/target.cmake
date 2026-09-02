@@ -103,6 +103,15 @@ target_include_directories(atarist_core PRIVATE
 	# config.h is generated into the build tree, not the source tree.
 	"${CMAKE_BINARY_DIR}")
 
+# Hatari treats every Apple platform as macOS in file.c and includes
+# <sys/disk.h> for raw /dev/disk size probing. The header and raw devices do
+# not exist in the iOS SDK, so let that one upstream object see our no-op
+# compatibility header. Normal application files continue through fseeko().
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	target_include_directories(CoreHmsa PRIVATE
+		"${ATARIST_CORE_DIR}/ios/compat")
+endif()
+
 # pthread is a separate library on glibc but is part of libc on Android's
 # bionic, where -lpthread does not exist at all ("ld.lld: error: unable to
 # find library -lpthread"). Apple's libSystem is the same story.
