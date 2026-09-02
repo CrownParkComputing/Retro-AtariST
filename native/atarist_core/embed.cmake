@@ -51,6 +51,12 @@ get_filename_component(ATARIST_CORE_DIR "${CMAKE_CURRENT_LIST_DIR}" ABSOLUTE)
 # project() is still configuring because CMake rejects enable_language() from
 # the deferred target injection below.
 if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	# CMake's Xcode generator can report a Darwin host targeting iOS as a
+	# native build. Hatari would then build its source generators for the
+	# simulator and try to execute them on macOS. Select Hatari's existing
+	# cross-build rules so build68k and gencpu are compiled by the host `cc`.
+	set(CMAKE_CROSSCOMPILING TRUE)
+
 	enable_language(CXX)
 	enable_language(OBJC)
 	enable_language(OBJCXX)
