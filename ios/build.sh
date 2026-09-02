@@ -25,5 +25,6 @@ cmake -S "$repo_root/vendor/hatari" -B "$build_dir" -G Xcode \
 	-DCMAKE_OSX_ARCHITECTURES=arm64 \
 	-DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
 	-DCMAKE_BUILD_TYPE=Release \
+	-DCMAKE_XCODE_GENERATE_SCHEME=ON \
 	"${@:2}"
 cmake --build "$build_dir" --config Release --target RetroAtariST

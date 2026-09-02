@@ -1,8 +1,8 @@
 # Retro-AtariST
 
-Retro-AtariST is a native iOS and Android front end for the **Hatari** Atari ST
-emulator. It uses Dear ImGui over Metal on iOS and OpenGL ES on Android; it
-contains no Flutter engine, Dart runtime, SDL windowing layer or JIT compiler.
+Retro-AtariST is a fully native iOS and Android front end for the **Hatari**
+Atari ST emulator. It uses Dear ImGui over Metal on iOS and OpenGL ES on
+Android, with an interpreter-only CPU core and no runtime code generation.
 
 It emulates the **ST**, **Mega ST**, **STE**, **Mega STE**, **TT** and
 **Falcon 030**. Hatari runs in-process behind a small C ABI, on its own thread.
@@ -47,6 +47,10 @@ git submodule update --init --recursive
 The script generates an Xcode project under `ios/build/<sdk>` and builds the
 `RetroAtariST` application. Hatari is linked statically into the bundle. The
 68000/68030 CPU core is interpreter-only; Hatari's JIT sources are not built.
+The generated project includes a shared `RetroAtariST` scheme. CI builds the
+unsigned Apple Silicon simulator application on macOS and publishes the `.app`
+and `.xcodeproj` as workflow artifacts. Device signing, physical testing and
+App Store archive/export remain deliberate Mac-side steps.
 
 ## Building for Android
 

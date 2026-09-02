@@ -1,10 +1,9 @@
 /*
  * audio_sink_ios.m - iOS/macOS audio output through a RemoteIO Audio Unit.
  *
- * NOT YET COMPILED ANYWHERE. This was written against Apple's documented APIs
- * on a Linux machine with no iOS SDK, so treat it as a first draft that has
- * never seen a compiler. The shape is right and the API calls are the standard
- * ones; expect to fix small things on first build.
+ * Compiled by the unsigned iOS Simulator CI build. Physical-device behaviour
+ * still needs validation on a Mac because the Linux development host cannot
+ * exercise AVAudioSession, the ringer-switch policy or RemoteIO hardware.
  *
  * Objective-C rather than C, for exactly one reason: AVAudioSession. The Audio
  * Unit half below is pure C and would compile as .c, but without configuring

@@ -15,7 +15,7 @@ Android: NativeActivity + SAF + OpenGL ES
 
 Everything runs in one application process. Hatari is statically linked on iOS
 and packaged as a private native library on Android; there is no child emulator
-process, Flutter engine, Dart runtime, SDL window or downloaded core.
+process, managed UI runtime, SDL window or downloaded core.
 
 RetroMedia HTTP work remains in the Objective-C++ platform layer. It stores the
 revocable session cookie in iOS Keychain, turns downloaded artwork into Metal
