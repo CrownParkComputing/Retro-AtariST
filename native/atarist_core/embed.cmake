@@ -54,6 +54,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	enable_language(CXX)
 	enable_language(OBJC)
 	enable_language(OBJCXX)
+
+	# CMake makes every executable an application bundle for iOS, including
+	# Hatari's desktop executable and its command-line helper tools. Upstream's
+	# RUNTIME-only install() declarations are therefore invalid during iOS
+	# configuration even though none of those targets is built. This embedded
+	# build has no install phase, so suppress those declarations at the command
+	# boundary rather than carrying a patch in the Hatari submodule.
+	function(install)
+	endfunction()
 endif()
 
 # include(), not add_subdirectory(): CMake refuses to create a subdirectory
