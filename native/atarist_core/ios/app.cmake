@@ -1,10 +1,6 @@
 # Native iPhone/iPad application. This file is included after atarist_core is
 # defined, from Hatari's deferred target injection (see ../embed.cmake).
 
-enable_language(CXX)
-enable_language(OBJC)
-enable_language(OBJCXX)
-
 get_filename_component(RETRO_ATARIST_ROOT "${ATARIST_CORE_DIR}/../.." ABSOLUTE)
 set(RETRO_ATARIST_IOS "${RETRO_ATARIST_ROOT}/ios")
 set(RETRO_ATARIST_FRONTEND "${RETRO_ATARIST_ROOT}/native/frontend")

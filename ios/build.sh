@@ -20,6 +20,7 @@ cmake -S "$repo_root/vendor/hatari" -B "$build_dir" -G Xcode \
 	-DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=BOTH \
 	-DENABLE_SDL3=0 \
 	-DENABLE_DSP_EMU=0 \
+	-DENABLE_OSX_BUNDLE=0 \
 	-DCMAKE_SYSTEM_NAME=iOS \
 	-DCMAKE_OSX_SYSROOT="$sdk" \
 	-DCMAKE_OSX_ARCHITECTURES=arm64 \

@@ -46,6 +46,16 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # else.
 get_filename_component(ATARIST_CORE_DIR "${CMAKE_CURRENT_LIST_DIR}" ABSOLUTE)
 
+# project(Hatari C) enables only C. The mobile bundle also contains C++,
+# Objective-C and Objective-C++; these languages must be enabled here while
+# project() is still configuring because CMake rejects enable_language() from
+# the deferred target injection below.
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	enable_language(CXX)
+	enable_language(OBJC)
+	enable_language(OBJCXX)
+endif()
+
 # include(), not add_subdirectory(): CMake refuses to create a subdirectory
 # during deferred execution ("Subdirectories may not be created during deferred
 # execution"). Including target.cmake into Hatari's own top-level scope has the
