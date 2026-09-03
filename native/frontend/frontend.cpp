@@ -87,6 +87,13 @@ struct AppState {
 	std::vector<MediaFile> active_disks;
 	std::unordered_map<std::string, Artwork> artwork;
 	Artwork brand_logo;
+
+	// The display area the system does not cover. Zero unless a platform sets
+	// it, so every non-Apple target is unaffected.
+	float safe_left = 0.0f;
+	float safe_top = 0.0f;
+	float safe_right = 0.0f;
+	float safe_bottom = 0.0f;
 	std::vector<CatalogueItem> catalogue;
 	bool retro_media_busy = false;
 	bool retro_media_signed_in = false;
@@ -988,8 +995,9 @@ void draw_demo() {
 }
 
 void draw_workbench(const float width, const float height) {
-	ImGui::SetNextWindowPos(ImVec2(0, 0));
-	ImGui::SetNextWindowSize(ImVec2(width, height));
+	ImGui::SetNextWindowPos(ImVec2(g.safe_left, g.safe_top));
+	ImGui::SetNextWindowSize(ImVec2(width - g.safe_left - g.safe_right,
+	                                height - g.safe_top - g.safe_bottom));
 	ImGui::Begin("##workbench", nullptr,
 	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
 	                 ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
@@ -1163,6 +1171,9 @@ void draw_emulator(const ImTextureID texture, const float width, const float hei
 	const bool menu_visible = g.now_ms <= g.menu_visible_until_ms;
 	ImGui::SetNextWindowPos(ImVec2(0, 0));
 	ImGui::SetNextWindowSize(ImVec2(width, height));
+	// Deliberately NOT inset: the emulated picture should reach the edges of
+	// the screen. Only the overlay controls drawn into it are kept clear of
+	// the cutout, via the padding applied where each is positioned.
 	ImGui::Begin("##emulator", nullptr,
 	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove |
 	                 ImGuiWindowFlags_NoSavedSettings);
@@ -1304,6 +1315,14 @@ void draw(const ImTextureID frame_texture, const float display_width, const floa
 
 void brand_logo(const ImTextureID texture, const int width, const int height) {
 	g.brand_logo = {texture, width, height};
+}
+
+void safe_area_insets(const float left, const float top,
+                      const float right, const float bottom) {
+	g.safe_left = left;
+	g.safe_top = top;
+	g.safe_right = right;
+	g.safe_bottom = bottom;
 }
 
 void imported_file(const ImportKind kind, const char* path) {

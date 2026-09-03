@@ -40,6 +40,12 @@ Frame frame();
 void draw(ImTextureID frame_texture, float display_width, float display_height);
 void brand_logo(ImTextureID texture, int width, int height);
 
+// The area of the display the system does not cover. On a phone with a
+// cutout or a home indicator this is smaller than the display, and drawing
+// from (0,0) puts the top of the UI underneath the cutout. Defaults to zero,
+// so a platform that does not set it behaves exactly as before.
+void safe_area_insets(float left, float top, float right, float bottom);
+
 void imported_file(ImportKind kind, const char* path);
 void key_event(int st_scancode, bool pressed);
 void joystick_event(int mask);

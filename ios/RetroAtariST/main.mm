@@ -199,6 +199,13 @@ static int AtariScancodeForHid(const NSInteger usage) {
 		const ImTextureID texture = _frameTexture != nil
 		    ? static_cast<ImTextureID>(reinterpret_cast<intptr_t>((__bridge void*)_frameTexture))
 		    : ImTextureID_Invalid;
+		// The cutout and the home indicator. Without this the top of the UI
+		// draws under the Dynamic Island -- the "Machine" tab rendered as
+		// "achine" on an iPhone 17 Pro Max. UIKit reports these in points,
+		// which is what ImGui is working in here.
+		const UIEdgeInsets safe = view.safeAreaInsets;
+		retro_atarist::safe_area_insets((float)safe.left, (float)safe.top,
+		                                (float)safe.right, (float)safe.bottom);
 		retro_atarist::draw(texture, bounds.width, bounds.height);
 		ImGui::Render();
 
