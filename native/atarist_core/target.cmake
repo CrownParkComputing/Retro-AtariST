@@ -59,6 +59,18 @@ set(BRIDGE_SOURCES
 	"${ATARIST_CORE_DIR}/bridge/atarist_bridge.c"
 	"${AUDIO_SINK}")
 
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	list(APPEND BRIDGE_SOURCES
+		"${ATARIST_CORE_DIR}/bridge/paths_ios.m")
+
+	# src/paths.c and gui-osx/paths.m both become paths.o under Xcode. The
+	# latter is a macOS desktop preference helper; replace it with our uniquely
+	# named sandbox-aware implementation to avoid the object-name collision.
+	get_target_property(ATARIST_CORE_SOURCES Core SOURCES)
+	list(FILTER ATARIST_CORE_SOURCES EXCLUDE REGEX "gui-osx/paths\\.m$")
+	set_property(TARGET Core PROPERTY SOURCES ${ATARIST_CORE_SOURCES})
+endif()
+
 # Upstream UaeCpu owns Xcode build phases that compile and execute its source
 # generators. Those phases inherit the iPhone SDK and produce helper programs
 # that cannot execute on the Mac host. ios/build.sh generates the identical,
