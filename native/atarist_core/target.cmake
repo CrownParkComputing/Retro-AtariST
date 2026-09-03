@@ -81,7 +81,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
 	set(MOBILE_CPU_SOURCE "${HATARI_TOP}/src/cpu")
 	set(MOBILE_CPU_GENERATED "${CMAKE_BINARY_DIR}/retro-atarist-cpu")
 	set(MOBILE_CPUEMU_SOURCES
-		cpuemu_0.c cpuemu_11.c cpuemu_13.c cpuemu_20.c cpuemu_21.c
+		cpustbl.c cpuemu_0.c cpuemu_11.c cpuemu_13.c cpuemu_20.c cpuemu_21.c
 		cpuemu_22.c cpuemu_23.c cpuemu_24.c cpuemu_31.c cpuemu_32.c
 		cpuemu_33.c cpuemu_34.c cpuemu_35.c cpuemu_40.c cpuemu_50.c)
 	list(TRANSFORM MOBILE_CPUEMU_SOURCES PREPEND "${MOBILE_CPU_GENERATED}/")
