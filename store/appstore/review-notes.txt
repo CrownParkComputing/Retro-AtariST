@@ -64,4 +64,13 @@ LICENCES AND SOURCE
 The application links Hatari and is therefore distributed under the GNU General
 Public License v2 or later. The licence texts for Hatari, EmuTOS and Dear ImGui
 are copied into the application's own resources and shown on its About page.
-Corresponding source for Hatari and EmuTOS is at the URLs above.
+
+Complete corresponding source, for this application as well as for the
+components above:
+
+    https://github.com/CrownParkComputing/Retro-AtariST
+    https://github.com/hatari/hatari
+    https://emutos.sourceforge.io
+
+The first of those is the source for this exact build, including the submodule
+revision of Hatari it was compiled from.
