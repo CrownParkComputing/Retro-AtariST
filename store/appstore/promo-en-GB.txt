@@ -1,0 +1,1 @@
+A real Atari ST in your hands: EmuTOS and a demo are built in, so it boots the moment you install it, with your own disks added through the Files app.

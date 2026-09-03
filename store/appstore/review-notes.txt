@@ -1,0 +1,67 @@
+GUIDELINE 4.7.4 -- INDEX OF GAMES AND SOFTWARE AVAILABLE IN THE APP
+
+This app does not offer, download, stream or link to any non-embedded games or
+software. There is no game catalogue, store or server on iOS. All executable
+content is embedded in the app binary:
+
+1. Hatari (the Atari ST/STE/TT/Falcon emulator)
+   Developer: The Hatari team
+   Licence: GNU GPL v2 or later
+   URL: https://github.com/hatari/hatari
+   Vendored unmodified as a git submodule; this project adds its own UI backend
+   alongside Hatari's rather than patching any Hatari source file.
+
+2. EmuTOS 1.4, UK 512 KiB image
+   Developer: The EmuTOS project
+   Licence: GNU GPL v2
+   URL: https://emutos.sourceforge.io
+   The free, open replacement for Atari's TOS ROM. It is what lets the app boot
+   a working desktop with nothing supplied by the user.
+
+3. Retro-AtariST core demo (a FAT12 test floppy)
+   Developer: Crown Park Computing (this app's developer) -- an original work
+   Licence: GNU GPL v2 or later
+   It displays a moving marker under EmuTOS and waits for keyboard input. It
+   contains no Atari ROM and no third-party game content.
+
+No Atari TOS ROM and no commercial game is included or offered. Atari's TOS is
+proprietary and is not bundled; a user may supply an image they are entitled to
+use, and EmuTOS remains the default. Users add their own disk images through
+Apple's document picker. We will attach an up-to-date copy of this index in the
+Review Notes of every future submission.
+
+----------------------------------------------------------------------
+
+HOW TO SEE IT WORKING, WITH NOTHING TO SUPPLY
+
+No account, login, credentials or files are needed. On a clean install the
+bundled EmuTOS boots on its own:
+
+  1. Tap "Demo" in the sidebar.
+  2. Tap "Run bundled core demo".
+  3. EmuTOS boots and the demo floppy runs, checking CPU and frame timing,
+     video and keyboard input on screen.
+
+Machine models (ST, Mega ST, STE, Mega STE, TT, Falcon 030) are on the
+"Machine" page. "Library" is where a user's own disk images appear once they
+are placed in the app's folder in the Files app.
+
+ABOUT NETWORK ACCESS
+
+The iOS build signs in to Crown Park Computing RetroMedia for cover ARTWORK
+only. It has no game-catalogue and no game-download calls on this platform --
+that path exists in the Android application and is excluded here at build time,
+not hidden behind a setting. Passwords are never persisted; the session token
+is held in the iOS Keychain. Nothing is contacted unless the user signs in.
+
+EMULATION AND THE APP STORE RULES
+
+The 68000/68030 CPU core is an interpreter. Hatari's JIT sources are not built,
+so the app performs no runtime code generation of any kind.
+
+LICENCES AND SOURCE
+
+The application links Hatari and is therefore distributed under the GNU General
+Public License v2 or later. The licence texts for Hatari, EmuTOS and Dear ImGui
+are copied into the application's own resources and shown on its About page.
+Corresponding source for Hatari and EmuTOS is at the URLs above.

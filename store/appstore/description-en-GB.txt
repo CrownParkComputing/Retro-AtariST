@@ -1,0 +1,28 @@
+Bring the Atari ST family to your iPhone and iPad with a native, touch-first front end built on the Hatari emulator. Retro-AtariST supports the Atari ST, Mega ST, STE, Mega STE, TT and Falcon 030.
+
+RUN IT STRAIGHT AWAY
+The app includes the free, open-source EmuTOS replacement ROM and an original core-test demo. It can boot and demonstrate CPU, video and input without an Atari ROM, a commercial game, an account or a network connection.
+
+USE SOFTWARE YOU OWN
+Add your own legally obtained ST, MSA, DIM, STX, IPF, IMG and ZIP disk images through the Files app -- the app's folder appears under On My iPhone or On My iPad. You can also supply an original Atari TOS image that you are entitled to use; EmuTOS remains the legal built-in default.
+
+MADE FOR TOUCH
+Use the full-width on-screen Atari keyboard, a touch joystick, mouse input or a physical controller. Choose 4:3 or 16:9 presentation, and swap disks for multi-disk software while emulation is running.
+
+LIBRARY AND ARTWORK
+Organise your media in the visual library. An optional Crown Park Computing RetroMedia sign-in can match local titles and download cover artwork. Passwords are never stored by the app, and no games are downloaded.
+
+FEATURES
+- Native Hatari-based Atari ST-family emulation
+- ST, Mega ST, STE, Mega STE, TT and Falcon 030 models
+- Bundled EmuTOS and an original offline demo
+- ST, MSA, DIM, STX, IPF, IMG and ZIP media support
+- On-screen Atari keyboard, touch joystick and physical controller input
+- 4:3 and 16:9 presentation options
+- Multi-disk swapping while a game runs
+- Optional RetroMedia cover artwork
+- Interpreter-only 68000/68030 CPU core, with no runtime code generation
+
+Retro-AtariST includes no Atari TOS ROM and no commercial games. Add only software and ROM images you are legally entitled to use.
+
+Retro-AtariST links Hatari and is released under the GNU General Public License version 2 or later.
