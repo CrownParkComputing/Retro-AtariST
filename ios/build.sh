@@ -14,7 +14,7 @@ script_dir="$(cd "$(dirname "$0")" && pwd)"
 repo_root="$(dirname "$script_dir")"
 build_dir="$script_dir/build/$sdk"
 cpu_source="$repo_root/vendor/hatari/src/cpu"
-cpu_build="$build_dir/src/cpu"
+cpu_build="$build_dir/retro-atarist-cpu"
 
 # Hatari normally creates these sources from Xcode build phases. A Darwin host
 # targeting iOS is not consistently treated as a cross-build by CMake/Xcode,

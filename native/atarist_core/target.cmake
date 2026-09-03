@@ -59,6 +59,63 @@ set(BRIDGE_SOURCES
 	"${ATARIST_CORE_DIR}/bridge/atarist_bridge.c"
 	"${AUDIO_SINK}")
 
+# Upstream UaeCpu owns Xcode build phases that compile and execute its source
+# generators. Those phases inherit the iPhone SDK and produce helper programs
+# that cannot execute on the Mac host. ios/build.sh generates the identical,
+# architecture-independent C sources before configuration; compile them in a
+# separate object target so Xcode never pulls in upstream's generator phases.
+set(ATARIST_UAE_CPU_OBJECTS "$<TARGET_OBJECTS:UaeCpu>")
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+	set(MOBILE_CPU_SOURCE "${HATARI_TOP}/src/cpu")
+	set(MOBILE_CPU_GENERATED "${CMAKE_BINARY_DIR}/retro-atarist-cpu")
+	set(MOBILE_CPUEMU_SOURCES
+		cpuemu_0.c cpuemu_11.c cpuemu_13.c cpuemu_20.c cpuemu_21.c
+		cpuemu_22.c cpuemu_23.c cpuemu_24.c cpuemu_31.c cpuemu_32.c
+		cpuemu_33.c cpuemu_34.c cpuemu_35.c cpuemu_40.c cpuemu_50.c)
+	list(TRANSFORM MOBILE_CPUEMU_SOURCES PREPEND "${MOBILE_CPU_GENERATED}/")
+	set(MOBILE_CPU_SOURCES
+		"${MOBILE_CPU_GENERATED}/cpudefs.c"
+		"${MOBILE_CPU_SOURCE}/cpummu.c"
+		"${MOBILE_CPU_SOURCE}/cpummu030.c"
+		"${MOBILE_CPU_SOURCE}/debug.c"
+		"${MOBILE_CPU_SOURCE}/disasm.c"
+		"${MOBILE_CPU_SOURCE}/newcpu_common.c"
+		"${MOBILE_CPU_SOURCE}/newcpu.c"
+		"${MOBILE_CPU_SOURCE}/readcpu.c"
+		"${MOBILE_CPU_SOURCE}/writelog.c"
+		"${MOBILE_CPU_SOURCE}/fpp.c"
+		"${MOBILE_CPU_SOURCE}/fpp_native.c"
+		"${MOBILE_CPU_SOURCE}/fpp_softfloat.c"
+		"${MOBILE_CPU_SOURCE}/softfloat/softfloat.c"
+		"${MOBILE_CPU_SOURCE}/softfloat/softfloat_decimal.c"
+		"${MOBILE_CPU_SOURCE}/softfloat/softfloat_fpsp.c"
+		"${MOBILE_CPU_SOURCE}/machdep/m68k.c"
+		"${MOBILE_CPU_SOURCE}/custom.c"
+		"${MOBILE_CPU_SOURCE}/events.c"
+		"${MOBILE_CPU_SOURCE}/memory.c"
+		"${MOBILE_CPU_SOURCE}/hatari-glue.c")
+	add_library(AtariSTUaeCpu OBJECT
+		${MOBILE_CPUEMU_SOURCES}
+		${MOBILE_CPU_SOURCES})
+	target_include_directories(AtariSTUaeCpu PRIVATE
+		"${MOBILE_CPU_SOURCE}"
+		"${HATARI_TOP}/src"
+		"${HATARI_TOP}/src/includes"
+		"${MOBILE_CPU_SOURCE}/softfloat"
+		"${MOBILE_CPU_GENERATED}"
+		"${CMAKE_BINARY_DIR}")
+	target_compile_options(AtariSTUaeCpu PRIVATE
+		-Wno-sign-compare
+		-Wno-unused-variable
+		-Wno-unused-function
+		-Wno-unused-label
+		-Wno-missing-braces
+		-fwrapv)
+	set_target_properties(AtariSTUaeCpu PROPERTIES
+		POSITION_INDEPENDENT_CODE ON)
+	set(ATARIST_UAE_CPU_OBJECTS "$<TARGET_OBJECTS:AtariSTUaeCpu>")
+endif()
+
 # The mobile iOS app links the core statically. This avoids an otherwise
 # unnecessary embedded-framework/code-signing boundary and lets the native
 # frontend call the C ABI directly. Other platforms keep the shared library
@@ -74,7 +131,7 @@ add_library(atarist_core ${ATARIST_CORE_LIBRARY_TYPE}
 	$<TARGET_OBJECTS:Core>
 	$<TARGET_OBJECTS:CoreHmsa>
 	$<TARGET_OBJECTS:Falcon>
-	$<TARGET_OBJECTS:UaeCpu>
+	${ATARIST_UAE_CPU_OBJECTS}
 	$<TARGET_OBJECTS:Debug>)
 
 if(ANDROID)
