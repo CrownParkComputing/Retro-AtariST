@@ -86,3 +86,143 @@ jobs:
         run: |
           ./ios/build.sh iphonesimulator \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+
+  # A signed device build, archived and uploaded to App Store Connect.
+  #
+  # Separate from the simulator job on purpose: that one must keep running for
+  # every push, with no secrets, so a broken tree fails loudly in a fork too.
+  # This one is gated on SIGNING_PASSPHRASE and simply does not run without it.
+  #
+  # The signing material lives in ios/signing/*.enc, encrypted with that one
+  # passphrase. See ios/signing/README.md.
+  ios-release:
+    name: iOS signed archive
+    runs-on: macos-15
+    needs: source
+    timeout-minutes: 90
+    if: github.ref == 'refs/heads/main'
+    env:
+      HAS_SIGNING: ${{ secrets.SIGNING_PASSPHRASE != '' }}
+      BUNDLE_ID: com.crownparkcomputing.retroatarist
+      TEAM_ID: 88A3T9K9C5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Decrypt the signing material
+        if: env.HAS_SIGNING == 'true'
+        env:
+          PASS: ${{ secrets.SIGNING_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          D="$RUNNER_TEMP/signing"; mkdir -p "$D"; chmod 700 "$D"
+          dec() { openssl enc -d -aes-256-cbc -pbkdf2 -iter 600000 \
+                    -in "ios/signing/$1" -out "$D/$2" -pass env:PASS; }
+          dec dist.p12.enc                dist.p12
+          dec profile.mobileprovision.enc profile.mobileprovision
+          dec asc_key.p8.enc              asc_key.p8
+          dec signing.env.enc             signing.env
+          echo "D=$D" >> "$GITHUB_ENV"
+
+      - name: Import signing certificate
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          set -euo pipefail
+          . "$D/signing.env"
+          KEYCHAIN=build.keychain
+          security create-keychain -p actions "$KEYCHAIN"
+          security default-keychain -s "$KEYCHAIN"
+          security set-keychain-settings "$KEYCHAIN"
+          security unlock-keychain -p actions "$KEYCHAIN"
+          security import "$D/dist.p12" -k "$KEYCHAIN" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          # codesign: in the partition list is the whole point. Without it the
+          # key imports, find-identity calls it valid, and every signing
+          # attempt fails with errSecInternalComponent -- which reads like a
+          # broken certificate and is nothing of the kind.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions "$KEYCHAIN"
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp "$D/profile.mobileprovision" \
+            ~/Library/MobileDevice/Provisioning\ Profiles/build.mobileprovision
+
+      # App Store Connect refuses a CFBundleVersion it has already seen, and
+      # says so only AFTER the whole upload has transferred.
+      - name: Choose a build number
+        if: env.HAS_SIGNING == 'true'
+        id: buildno
+        run: echo "n=$(date -u +%Y%m%d%H%M)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and archive
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          set -euo pipefail
+          ./ios/build.sh iphoneos -DDEVELOPMENT_TEAM="$TEAM_ID"
+          xcodebuild archive \
+            -project ios/build/iphoneos/*.xcodeproj -scheme RetroAtariST \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath build/RetroAtariST.xcarchive \
+            CURRENT_PROJECT_VERSION="${{ steps.buildno.outputs.n }}"
+
+      # A delivery can report success, be given a UUID, and then be discarded
+      # in processing -- by email, hours later, with this job green. A missing
+      # icon key does it, and so does a purpose string for an API the binary
+      # merely LINKS. Derived from the binary rather than a remembered list.
+      - name: Verify the bundle cannot be discarded in processing
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          set -euo pipefail
+          app=build/RetroAtariST.xcarchive/Products/Applications/Retro-AtariST.app
+          plist="$app/Info.plist"
+          [ -f "$plist" ] || { echo "::error::no app in the archive"; exit 1; }
+          need() {
+            /usr/bin/plutil -extract "$1" raw -o - "$plist" >/dev/null 2>&1 \
+              || { echo "::error::$1 is missing from the built bundle"; exit 1; }
+          }
+          need CFBundleIcons.CFBundlePrimaryIcon.CFBundleIconName
+          need ITSAppUsesNonExemptEncryption
+          bin="$app/Retro-AtariST"
+          check_api() {
+            if nm -u "$bin" 2>/dev/null | grep -q "$1"; then
+              need "$2"; echo "  $1 is linked -> $2 present"
+            fi
+          }
+          check_api AVCaptureDevice   NSCameraUsageDescription
+          check_api CLLocationManager NSLocationWhenInUseUsageDescription
+          check_api PHPhotoLibrary    NSPhotoLibraryUsageDescription
+          check_api CNContactStore    NSContactsUsageDescription
+          check_api CBCentralManager  NSBluetoothAlwaysUsageDescription
+          echo "bundle looks deliverable"
+
+      - name: Export and upload
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          set -euo pipefail
+          . "$D/signing.env"
+          profile_name=$(security cms -D -i "$D/profile.mobileprovision" \
+            | plutil -extract Name raw -o - -)
+          cat > ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict><key>$BUNDLE_ID</key><string>$profile_name</string></dict>
+            <key>stripSwiftSymbols</key><true/>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/RetroAtariST.xcarchive \
+            -exportOptionsPlist ExportOptions.plist -exportPath build/ipa
+          mkdir -p ~/.appstoreconnect/private_keys
+          cp "$D/asc_key.p8" ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          xcrun altool --upload-app -f build/ipa/*.ipa -t ios \
+            --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: retroatarist-ios
+          path: build/ipa/*.ipa
+          if-no-files-found: ignore
