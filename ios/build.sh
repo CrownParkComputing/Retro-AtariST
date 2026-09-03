@@ -28,4 +28,11 @@ cmake -S "$repo_root/vendor/hatari" -B "$build_dir" -G Xcode \
 	-DCMAKE_BUILD_TYPE=Release \
 	-DCMAKE_XCODE_GENERATE_SCHEME=ON \
 	"${@:2}"
-cmake --build "$build_dir" --config Release --target RetroAtariST
+
+# Hatari's cross-build rules intentionally invoke a bare `cc` for build-time
+# CPU source generators. Xcode exports the iPhone SDK into build phases, which
+# would otherwise turn those helper programs into simulator executables that
+# cannot run on the Mac host. Put our macOS-only compiler shim first for the
+# build phase; target compilation still uses CMake's configured iOS compiler.
+PATH="$script_dir/host-tools:$PATH" \
+	cmake --build "$build_dir" --config Release --target RetroAtariST
