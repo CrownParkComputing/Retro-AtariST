@@ -101,6 +101,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
 		"${MOBILE_CPU_SOURCE}"
 		"${HATARI_TOP}/src"
 		"${HATARI_TOP}/src/includes"
+		"${HATARI_TOP}/src/debug"
+		"${HATARI_TOP}/src/falcon"
 		"${MOBILE_CPU_SOURCE}/softfloat"
 		"${MOBILE_CPU_GENERATED}"
 		"${CMAKE_BINARY_DIR}")
