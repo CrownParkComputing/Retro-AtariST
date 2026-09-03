@@ -17,6 +17,46 @@ fun quotedBuildValue(name: String): String {
     return "\"$value\""
 }
 
+data class KeystoreConfig(
+    val path: String,
+    val storePassword: String,
+    val keyAlias: String,
+    val keyPassword: String,
+)
+
+fun resolveKeystore(): KeystoreConfig? {
+    val envPath = System.getenv("ANDROID_KEYSTORE_PATH")
+    val envStorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+    val envAlias = System.getenv("ANDROID_KEY_ALIAS")
+    val envKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+    if (envPath != null && envStorePassword != null &&
+        envAlias != null && envKeyPassword != null
+    ) {
+        logger.lifecycle("release: using keystore from ANDROID_KEYSTORE_PATH")
+        return KeystoreConfig(envPath, envStorePassword, envAlias, envKeyPassword)
+    }
+
+    val propertiesFile = rootProject.file("key.properties")
+    if (propertiesFile.isFile) {
+        val values = Properties().apply { propertiesFile.inputStream().use(::load) }
+        val path = values.getProperty("storeFile")
+        val storePassword = values.getProperty("storePassword")
+        val alias = values.getProperty("keyAlias")
+        val keyPassword = values.getProperty("keyPassword")
+        if (path != null && storePassword != null && alias != null && keyPassword != null) {
+            logger.lifecycle("release: using ignored local key.properties")
+            return KeystoreConfig(path, storePassword, alias, keyPassword)
+        }
+    }
+
+    logger.warn(
+        "release: no upload keystore configured; the release bundle will be unsigned"
+    )
+    return null
+}
+
+val keystoreConfig = resolveKeystore()
+
 val buildAtariCoreArm64 by tasks.registering(Exec::class) {
     group = "build"
     description = "Build the headless Hatari core for Android ARM64"
@@ -69,6 +109,17 @@ android {
         jniLibs.srcDir(generatedCore)
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystoreConfig != null) {
+                storeFile = file(keystoreConfig.path)
+                storePassword = keystoreConfig.storePassword
+                keyAlias = keystoreConfig.keyAlias
+                keyPassword = keystoreConfig.keyPassword
+            }
+        }
+    }
+
     buildTypes {
         debug {
             isJniDebuggable = true
@@ -76,6 +127,9 @@ android {
             buildConfigField("String", "RETROMEDIA_PASSWORD", quotedBuildValue("retromedia.password"))
         }
         release {
+            if (keystoreConfig != null) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             isShrinkResources = false
             buildConfigField("String", "RETROMEDIA_EMAIL", "\"\"")

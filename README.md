@@ -65,6 +65,13 @@ The ARM64 APK is written to
 `android/app/build/outputs/apk/debug/app-debug.apk`. It contains the native
 NativeActivity shell, shared ImGui frontend, Hatari core, EmuTOS and core demo.
 
+For a signed Play bundle, copy `android/key.properties.example` to the ignored
+`android/key.properties` and supply the upload-key details, then run
+`./gradlew :app:bundleRelease`. CI can instead provide
+`ANDROID_KEYSTORE_PATH`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS` and
+`ANDROID_KEY_PASSWORD`. With neither source configured, the release bundle is
+left unsigned rather than silently using a debug certificate.
+
 ## ROMs and software
 
 At first launch the app installs its bundled **EmuTOS 1.4 UK** image, so the
