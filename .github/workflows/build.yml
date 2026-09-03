@@ -38,7 +38,7 @@ jobs:
           git diff --check
 
   android:
-    name: Android native (APK + AAB)
+    name: Android native AAB
     runs-on: ubuntu-latest
     needs: source
     timeout-minutes: 45
@@ -59,14 +59,7 @@ jobs:
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'ndk;28.2.13676358' 'cmake;3.22.1'
       - name: Build and lint native Android application
         working-directory: android
-        run: ./gradlew --no-daemon :app:lintDebug :app:assembleDebug :app:bundleRelease
-      - name: Upload Android APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: retro-atarist-android-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
+        run: ./gradlew --no-daemon :app:lintDebug :app:bundleRelease
       - name: Upload unsigned Android App Bundle
         uses: actions/upload-artifact@v4
         with:
@@ -93,12 +86,3 @@ jobs:
         run: |
           ./ios/build.sh iphonesimulator \
             -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
-      - name: Upload simulator app and generated Xcode project
-        uses: actions/upload-artifact@v4
-        with:
-          name: retro-atarist-ios-simulator
-          path: |
-            ios/build/iphonesimulator/**/*.app
-            ios/build/iphonesimulator/*.xcodeproj
-          if-no-files-found: error
-          retention-days: 14
