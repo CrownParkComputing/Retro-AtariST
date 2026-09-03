@@ -81,7 +81,9 @@ double Similarity(NSString* leftValue, NSString* rightValue) {
 	if (left == right) return 1.0;
 	if (left.empty() || right.empty()) return 0.0;
 	std::vector<int> previous(right.size() + 1), current(right.size() + 1);
-	for (std::size_t index = 0; index <= right.size(); ++index) previous[index] = index;
+	for (std::size_t index = 0; index <= right.size(); ++index) {
+		previous[index] = static_cast<int>(index);
+	}
 	for (std::size_t row = 1; row <= left.size(); ++row) {
 		current[0] = static_cast<int>(row);
 		for (std::size_t column = 1; column <= right.size(); ++column) {
@@ -231,7 +233,8 @@ typedef void (^RetroMediaReply)(NSHTTPURLResponse* _Nullable, NSData* _Nullable,
 }
 
 - (void)signInWithEmail:(NSString*)email password:(NSString*)password {
-	email = email.stringByTrimmingCharactersInSet(NSCharacterSet.whitespaceAndNewlineCharacterSet);
+	email = [email stringByTrimmingCharactersInSet:
+	               NSCharacterSet.whitespaceAndNewlineCharacterSet];
 	if (email.length == 0 || password.length == 0) { [self fail:@"Enter your RetroMedia email and password"]; return; }
 	[self request:@"GET" path:@"/api/auth/config" body:nil authenticated:NO completion:
 	 ^(NSHTTPURLResponse* configResponse, NSData* configData, NSError* configError) {
