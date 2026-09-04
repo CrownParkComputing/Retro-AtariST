@@ -65,6 +65,7 @@ target_link_libraries(RetroAtariST PRIVATE atarist_core
 # machine only ever has the App Store distribution one, so an unattended
 # device build fails with "No profiles for ... were found" before it reaches
 # the archive. CI overrides these three to sign manually.
+set(RETRO_ATARIST_BUILD_NUMBER "1" CACHE STRING "CFBundleVersion; CI passes a UTC timestamp")
 set(RETRO_ATARIST_CODE_SIGN_STYLE "Automatic" CACHE STRING "Automatic or Manual")
 set(RETRO_ATARIST_PROVISIONING_PROFILE "" CACHE STRING "profile name, Manual signing only")
 set(RETRO_ATARIST_CODE_SIGN_IDENTITY "" CACHE STRING "e.g. Apple Distribution")
@@ -87,6 +88,10 @@ set_target_properties(RetroAtariST PROPERTIES
 	XCODE_ATTRIBUTE_SKIP_INSTALL "NO"
 	XCODE_ATTRIBUTE_ASSETCATALOG_COMPILER_APPICON_NAME AppIcon
 	XCODE_ATTRIBUTE_IPHONEOS_DEPLOYMENT_TARGET 15.0
+	# Info.plist reads CFBundleVersion from this. CI overrides it on the
+	# xcodebuild command line with a UTC timestamp; without a default here a
+	# local build would produce an empty CFBundleVersion, which is invalid.
+	XCODE_ATTRIBUTE_CURRENT_PROJECT_VERSION "${RETRO_ATARIST_BUILD_NUMBER}"
 	XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER com.crownparkcomputing.retroatarist
 	XCODE_ATTRIBUTE_PRODUCT_NAME Retro-AtariST
 	XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2")
