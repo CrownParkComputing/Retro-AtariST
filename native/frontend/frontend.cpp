@@ -9,6 +9,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <filesystem>
+#include <cstdarg>
 #include <cstdio>
 #include <fstream>
 #include <string>
@@ -395,6 +396,21 @@ void begin_card(const char* id) {
 	                  ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding);
 }
 
+// ImGui::TextWrapped picks its own wrap position, and it does not agree with
+// the iOS host's io.FontGlobalScale: the text is laid out narrower than it
+// renders, so the tail runs past the card and is clipped -- "Original Atari
+// TOS is not supplied" with "app." orphaned underneath. Android never sets
+// that scale, which is why it only shows on iOS. Pin the wrap to the content
+// region so the two always agree.
+void text_wrapped(const char* fmt, ...) {
+	ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x);
+	va_list args;
+	va_start(args, fmt);
+	ImGui::TextV(fmt, args);
+	va_end(args);
+	ImGui::PopTextWrapPos();
+}
+
 bool nav_button(const char* label, const Screen screen, const float width) {
 	const bool selected = g.screen == screen;
 	if (selected) ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.78f, 0.07f, 0.09f, 1.0f));
@@ -678,7 +694,7 @@ void draw_game_browser() {
 			}
 			ImGui::SetCursorPosY(cursor_y);
 			ImGui::SetWindowFontScale(0.82f);
-			ImGui::TextWrapped("%s", game.name.c_str());
+			text_wrapped("%s", game.name.c_str());
 			ImGui::SetWindowFontScale(1.0f);
 			ImGui::SetCursorPosY(cursor_y + title_height + gap);
 			if (ImGui::Button("PLAY", ImVec2(-1, button_height))) start_selected(false, &game);
@@ -736,7 +752,7 @@ void draw_artwork() {
 		g.retro_media_type = type_ids[selected];
 		platform_retro_media_load_artwork(g.retro_media_type.c_str());
 	}
-	ImGui::TextWrapped("Match local disk names to the Atari ST catalogue and cache artwork on this device.");
+	text_wrapped("Match local disk names to the Atari ST catalogue and cache artwork on this device.");
 	ImGui::BeginDisabled(g.retro_media_busy || !g.retro_media_signed_in || g.software.empty());
 	if (ImGui::Button("Sync / download missing artwork", ImVec2(-1, 52.0f * ui_scale()))) {
 		std::string names;
@@ -749,7 +765,7 @@ void draw_artwork() {
 		platform_retro_media_sync_artwork(g.retro_media_type.c_str(), names.c_str());
 	}
 	ImGui::EndDisabled();
-	ImGui::TextWrapped("%s", g.retro_media_message.c_str());
+	text_wrapped("%s", g.retro_media_message.c_str());
 	ImGui::EndChild();
 }
 
@@ -870,7 +886,7 @@ void draw_downloads() {
 		               [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
 		return a < b;
 	});
-	if (!g.retro_media_message.empty()) ImGui::TextWrapped("%s", g.retro_media_message.c_str());
+	if (!g.retro_media_message.empty()) text_wrapped("%s", g.retro_media_message.c_str());
 	ImGui::BeginChild("##catalogue-scroll", ImVec2(0, 0), ImGuiChildFlags_Borders,
 	                  ImGuiWindowFlags_AlwaysVerticalScrollbar);
 	const float available = ImGui::GetContentRegionAvail().x;
@@ -884,7 +900,7 @@ void draw_downloads() {
 			ImGui::BeginChild("##download-card", ImVec2(0, 174.0f * scale),
 			                  ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding);
 			ImGui::SetWindowFontScale(1.12f);
-			ImGui::TextWrapped("%s", item.title.c_str());
+			text_wrapped("%s", item.title.c_str());
 			ImGui::SetWindowFontScale(1.0f);
 			ImGui::TextDisabled("%d file%s  %s", item.file_count,
 			                    item.file_count == 1 ? "" : "s",
@@ -943,16 +959,16 @@ void draw_machine() {
 	ImGui::Combo("##monitor", &g.monitor, monitors, IM_ARRAYSIZE(monitors));
 	ImGui::SeparatorText("Boot ROM");
 	media_combo("##rom", g.roms, g.rom_choice, "No EmuTOS/TOS image installed");
-	ImGui::TextWrapped("EmuTOS is the recommended legal default. Original Atari TOS is not supplied by this app.");
+	text_wrapped("EmuTOS is the recommended legal default. Original Atari TOS is not supplied by this app.");
 	ImGui::SeparatorText("Media");
 	media_combo("##media", g.software, g.software_choice, "No disk in drive A");
 	ImGui::Checkbox("Cycle-accurate floppy timing", &g.accurate_floppy);
-	ImGui::TextWrapped("Enable accurate timing for protected STX/IPF originals. Ordinary ST/MSA images boot faster with it off.");
+	text_wrapped("Enable accurate timing for protected STX/IPF originals. Ordinary ST/MSA images boot faster with it off.");
 	if (ImGui::Button("Rescan app folders", ImVec2(-1, 48.0f * ui_scale()))) rescan();
 	ImGui::SeparatorText("Input");
 	ImGui::Checkbox("Show on-screen joystick", &g.show_pad);
 	ImGui::Checkbox("Show Atari keyboard", &g.show_keyboard);
-	ImGui::TextWrapped("Touching the emulated display drives the ST mouse. External keyboards use physical Atari key positions.");
+	text_wrapped("Touching the emulated display drives the ST mouse. External keyboards use physical Atari key positions.");
 	ImGui::SeparatorText("Audio / Video");
 	constexpr const char* aspect_modes[] = {"4:3", "16:9"};
 	ImGui::SetNextItemWidth(-1);
@@ -965,7 +981,7 @@ void draw_machine() {
 void draw_about() {
 	heading("About Retro-AtariST", "A native mobile front end for Hatari.");
 	begin_card("about-card");
-	ImGui::TextWrapped(platform_game_downloads_available()
+	text_wrapped(platform_game_downloads_available()
 	                       ? "Atari ST, Mega ST, STE, Mega STE, TT and Falcon emulation through Hatari, presented by NativeActivity, OpenGL ES and Dear ImGui."
 	                       : "Atari ST, Mega ST, STE, Mega STE, TT and Falcon emulation through Hatari, presented by UIKit, Metal and Dear ImGui.");
 	ImGui::Spacing();
@@ -981,7 +997,7 @@ void draw_about() {
 void draw_demo() {
 	heading("Demo", "Test Hatari with EmuTOS and open project-authored software.");
 	begin_card("demo-card");
-	ImGui::TextWrapped("This demonstration boots the bundled GPLv2 EmuTOS replacement ROM and Retro-AtariST core-test floppy. It contains no Atari TOS ROM or commercial game content.");
+	text_wrapped("This demonstration boots the bundled GPLv2 EmuTOS replacement ROM and Retro-AtariST core-test floppy. It contains no Atari TOS ROM or commercial game content.");
 	ImGui::Spacing();
 	ImGui::BeginDisabled(g.roms.empty());
 	if (ImGui::Button("Start EmuTOS core demo", ImVec2(-1, 62.0f * ui_scale()))) {
@@ -1007,9 +1023,18 @@ void draw_workbench(const float width, const float height) {
 
 	const float scale = ui_scale();
 	const float rail = 180.0f * scale;
+	// Size the panes against the WINDOW, not the display. The window is inset
+	// by the safe area, so on a notched phone in landscape (62pt each side,
+	// 21pt at the bottom) the raw width is 124pt wider than the window and the
+	// raw height 21pt taller. Panes sized from it overhang the window and are
+	// clipped: wrapped text loses its last words, combo boxes and separators
+	// stop dead at the edge, and the bottom row disappears. The insets are 0
+	// on Android, where these are the same number.
+	const float inner_width = width - g.safe_left - g.safe_right;
+	const float inner_height = height - g.safe_top - g.safe_bottom;
 	ImGui::SetCursorPos(ImVec2(10.0f * scale, 10.0f * scale));
-	ImGui::BeginChild("rail", ImVec2(rail, height - 20.0f * scale), ImGuiChildFlags_Borders,
-	                  ImGuiWindowFlags_NoScrollbar);
+	ImGui::BeginChild("rail", ImVec2(rail, inner_height - 20.0f * scale),
+	                  ImGuiChildFlags_Borders, ImGuiWindowFlags_NoScrollbar);
 	if (g.brand_logo.texture != ImTextureID_Invalid && g.brand_logo.width > 0 &&
 	    g.brand_logo.height > 0) {
 		const float logo_width = ImGui::GetContentRegionAvail().x;
@@ -1032,7 +1057,8 @@ void draw_workbench(const float width, const float height) {
 	ImGui::EndChild();
 
 	ImGui::SetCursorPos(ImVec2(rail + 22.0f * scale, 10.0f * scale));
-	ImGui::BeginChild("content", ImVec2(width - rail - 32.0f * scale, height - 20.0f * scale),
+	ImGui::BeginChild("content",
+	                  ImVec2(inner_width - rail - 32.0f * scale, inner_height - 20.0f * scale),
 	                  ImGuiChildFlags_Borders | ImGuiChildFlags_AlwaysUseWindowPadding);
 	switch (g.screen) {
 		case Screen::Library: draw_library(); break;
