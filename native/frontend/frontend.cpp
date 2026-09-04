@@ -1145,6 +1145,11 @@ void draw_joystick(const float width, const float height) {
 	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
 	                 ImGuiWindowFlags_NoBackground);
 	int mask = 0;
+	// The buttons are square and the labels are not: at full size ImGui clips
+	// them to "LEF", "RI" and "DOW", which reads as a rendering bug rather
+	// than a d-pad. Shrink the font for the pad only, the same way the
+	// library's A-Z filter row does, so the words fit inside the squares.
+	ImGui::SetWindowFontScale(0.62f);
 	ImGui::Dummy(ImVec2(size, size)); ImGui::SameLine();
 	ImGui::Button("UP", ImVec2(size, size)); if (ImGui::IsItemActive()) mask |= ATARIST_JOY_UP;
 	ImGui::Button("LEFT", ImVec2(size, size)); if (ImGui::IsItemActive()) mask |= ATARIST_JOY_LEFT;
@@ -1152,6 +1157,7 @@ void draw_joystick(const float width, const float height) {
 	ImGui::Button("RIGHT", ImVec2(size, size)); if (ImGui::IsItemActive()) mask |= ATARIST_JOY_RIGHT;
 	ImGui::Dummy(ImVec2(size, size)); ImGui::SameLine();
 	ImGui::Button("DOWN", ImVec2(size, size)); if (ImGui::IsItemActive()) mask |= ATARIST_JOY_DOWN;
+	ImGui::SetWindowFontScale(1.0f);
 	ImGui::End();
 
 	ImGui::SetNextWindowBgAlpha(0.45f);
