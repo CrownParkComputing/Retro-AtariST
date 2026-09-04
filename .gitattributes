@@ -1,0 +1,6 @@
+# Encrypted signing material is ciphertext, not text. Git guessed "text" for
+# signing.env.enc because 144 bytes of AES output happened to contain no NUL,
+# and a checkout under core.autocrlf=true would then rewrite its line endings
+# and corrupt it. The damage surfaces in CI at `security import` as a
+# complaint about the password, which reads like a broken certificate.
+*.enc binary
