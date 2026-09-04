@@ -1132,8 +1132,14 @@ void draw_joystick(const float width, const float height) {
 		return;
 	}
 	const float size = 58.0f * ui_scale();
+	// The pad and fire button sit hard against the display edges, so unlike
+	// the emulator view they have to respect the safe area: on a notched
+	// device held in landscape the cutout eats one side and the home
+	// indicator the bottom, which leaves DOWN half off the screen. The
+	// insets are 0 unless a host sets them, so this is inert on Android.
 	ImGui::SetNextWindowBgAlpha(0.45f);
-	ImGui::SetNextWindowPos(ImVec2(12.0f, height - size * 3.35f));
+	ImGui::SetNextWindowPos(ImVec2(g.safe_left + 12.0f,
+	                               height - g.safe_bottom - size * 3.35f));
 	ImGui::SetNextWindowSize(ImVec2(size * 3.4f, size * 3.3f));
 	ImGui::Begin("##joystick", nullptr,
 	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
@@ -1149,7 +1155,8 @@ void draw_joystick(const float width, const float height) {
 	ImGui::End();
 
 	ImGui::SetNextWindowBgAlpha(0.45f);
-	ImGui::SetNextWindowPos(ImVec2(width - size * 2.1f, height - size * 2.25f));
+	ImGui::SetNextWindowPos(ImVec2(width - g.safe_right - size * 2.1f,
+	                               height - g.safe_bottom - size * 2.25f));
 	ImGui::SetNextWindowSize(ImVec2(size * 2.0f, size * 2.0f));
 	ImGui::Begin("##fire", nullptr,
 	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
