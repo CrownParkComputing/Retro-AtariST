@@ -1137,10 +1137,20 @@ void draw_joystick(const float width, const float height) {
 	// device held in landscape the cutout eats one side and the home
 	// indicator the bottom, which leaves DOWN half off the screen. The
 	// insets are 0 unless a host sets them, so this is inert on Android.
+	// Size the window from what a 3x3 grid of square buttons actually needs.
+	// The old size * 3.4 was a guess that did not account for item spacing or
+	// window padding, so the third column fell outside and RIGHT rendered as
+	// "RIG" -- a clip, not a font problem, which is why shrinking the label
+	// text alone did not fix it.
+	const ImGuiStyle& style = ImGui::GetStyle();
+	const float pad_w = size * 3.0f + style.ItemSpacing.x * 2.0f
+	                  + style.WindowPadding.x * 2.0f;
+	const float pad_h = size * 3.0f + style.ItemSpacing.y * 2.0f
+	                  + style.WindowPadding.y * 2.0f;
 	ImGui::SetNextWindowBgAlpha(0.45f);
 	ImGui::SetNextWindowPos(ImVec2(g.safe_left + 12.0f,
-	                               height - g.safe_bottom - size * 3.35f));
-	ImGui::SetNextWindowSize(ImVec2(size * 3.4f, size * 3.3f));
+	                               height - g.safe_bottom - pad_h));
+	ImGui::SetNextWindowSize(ImVec2(pad_w, pad_h));
 	ImGui::Begin("##joystick", nullptr,
 	             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
 	                 ImGuiWindowFlags_NoBackground);
