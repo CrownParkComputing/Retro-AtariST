@@ -70,7 +70,7 @@ jobs:
 
   ios:
     name: iOS native simulator
-    runs-on: macos-15
+    runs-on: macos-26
     needs: source
     timeout-minutes: 60
     steps:
@@ -97,7 +97,7 @@ jobs:
   # passphrase. See ios/signing/README.md.
   ios-release:
     name: iOS signed archive
-    runs-on: macos-15
+    runs-on: macos-26
     needs: source
     timeout-minutes: 90
     if: github.ref == 'refs/heads/main'
@@ -109,6 +109,21 @@ jobs:
       - uses: actions/checkout@v5
         with:
           submodules: recursive
+
+      # App Store Connect refuses a build made against too old an SDK, and it
+      # says so only at upload -- after decrypt, build, archive and export have
+      # all run and reported success. macos-15 carries Xcode 16.4 / iOS 18.5,
+      # which is rejected. Fail in seconds instead of twenty minutes.
+      - name: Require an SDK App Store Connect will accept
+        if: env.HAS_SIGNING == 'true'
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          sdk=$(xcrun --sdk iphoneos --show-sdk-version)
+          echo "iphoneos SDK: $sdk"
+          [ "${sdk%%.*}" -ge 26 ] || {
+            echo "::error::built against iOS SDK $sdk; App Store Connect requires 26 or later"
+            exit 1; }
 
       - name: Decrypt the signing material
         if: env.HAS_SIGNING == 'true'

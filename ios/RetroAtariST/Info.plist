@@ -42,8 +42,14 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- All four, and not by preference: an app that declares the iPad device
+	     family must support every orientation for multitasking, or App Store
+	     Connect rejects the upload outright with a 409. The phone is free to
+	     stay landscape-only, which is why the key above is unchanged. -->
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
