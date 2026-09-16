@@ -4,7 +4,7 @@ project(retro_atarist_android LANGUAGES C CXX)
 set(REPO_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../../../../")
 set(IMGUI_DIR "${REPO_ROOT}/third_party/imgui")
 set(FRONTEND_DIR "${REPO_ROOT}/native/frontend")
-set(CORE_DIR "${REPO_ROOT}/native/atarist_core")
+set(CORE_DIR "${REPO_ROOT}/core/retro")
 
 add_library(atarist_core SHARED IMPORTED)
 set_target_properties(atarist_core PROPERTIES

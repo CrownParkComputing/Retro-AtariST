@@ -1,3 +1,4 @@
-[submodule "vendor/hatari"]
-	path = vendor/hatari
-	url = https://github.com/hatari/hatari.git
+[submodule "core"]
+	path = core
+	url = https://github.com/CrownParkComputing/hatari.git
+	branch = cpc

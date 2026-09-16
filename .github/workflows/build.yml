@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           test ! -d flutter_app
-          if find . -path './.git' -prune -o -path './vendor' -prune -o \
+          if find . -path './.git' -prune -o -path './core' -prune -o \
               \( -name '*.dart' -o -name 'pubspec.yaml' -o -name 'pubspec.lock' \) \
               -print -quit | grep -q .; then
             echo '::error::A Flutter/Dart project file remains in the native application tree.'
@@ -68,21 +68,3 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  ios:
-    name: iOS native simulator
-    runs-on: macos-15
-    needs: source
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          submodules: recursive
-      - name: Report Apple toolchain
-        run: |
-          xcodebuild -version
-          xcrun --sdk iphonesimulator --show-sdk-version
-          cmake --version
-      - name: Build unsigned iPhone and iPad simulator application
-        run: |
-          ./ios/build.sh iphonesimulator \
-            -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO

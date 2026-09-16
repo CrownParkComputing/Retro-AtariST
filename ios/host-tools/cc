@@ -1,6 +1,0 @@
-#!/bin/sh
-set -eu
-
-# Strip Xcode's target SDK before selecting the compiler used for host tools.
-unset SDKROOT
-exec /usr/bin/xcrun --sdk macosx clang "$@"
