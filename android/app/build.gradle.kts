@@ -5,7 +5,7 @@ plugins {
 }
 
 val repositoryRoot = rootProject.file("..")
-val generatedCore = repositoryRoot.resolve("native/atarist_core/android/prebuilt")
+val generatedCore = repositoryRoot.resolve("core/retro/android/prebuilt")
 val privateProperties = Properties().apply {
     val source = rootProject.file("local.properties")
     if (source.isFile) source.inputStream().use(::load)
@@ -62,12 +62,12 @@ val buildAtariCoreArm64 by tasks.registering(Exec::class) {
     description = "Build the headless Hatari core for Android ARM64"
     workingDir = repositoryRoot
     environment("ANDROID_NDK_HOME", android.ndkDirectory.absolutePath)
-    commandLine("bash", "native/atarist_core/android/build.sh", "arm64-v8a")
+    commandLine("bash", "core/retro/android/build.sh", "arm64-v8a")
     inputs.files(
-        fileTree(repositoryRoot.resolve("native/atarist_core")) {
+        fileTree(repositoryRoot.resolve("core/retro")) {
             exclude("**/build-*/**", "android/prebuilt/**")
         },
-        fileTree(repositoryRoot.resolve("vendor/hatari/src")),
+        fileTree(repositoryRoot.resolve("core/src")),
     )
     outputs.file(generatedCore.resolve("arm64-v8a/libatarist_core.so"))
 }
