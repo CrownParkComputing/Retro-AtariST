@@ -43,7 +43,13 @@ colour_ready:
 	move.b	d5,2(a0)
 	move.b	d6,d0
 	add.b	#42,d0
-	move.b	d0,7(a0)
+	; 6(a0), not 7. show_star is ESC b <colour> ESC Y <row> <col> '*', so
+	; the column is byte 6 and the asterisk is byte 7 -- erase_star has no
+	; colour prefix, which is why ITS column really is byte 3. Writing the
+	; column into byte 7 left the marker parked at column 10 and replaced
+	; the asterisk with chr(42+d6): a '*' only on the first frame, then
+	; '+', ',', '-' and onwards.
+	move.b	d0,6(a0)
 	bsr	puts
 
 	move.w	#11,-(sp)
