@@ -67,20 +67,27 @@ puts:
 	addq.l	#6,sp
 	rts
 
+; Every line here must fit 40 COLUMNS. The ST boots in low resolution,
+; 320x200, which is 40 characters wide -- and a longer line wraps, with the
+; overflow landing on top of the next one. This banner was 62 columns, and
+; store/play/screenshots-phone/1-emutos-core-demo.png is a published picture
+; of the result: "RETRO-ATARIST CORE D|", truncated mid-word, with the
+; rule's wrapped tail sitting in the title row. 80 columns is medium
+; resolution, which this demo never asks for.
 banner:
 	dc.b	$1b,"E",$1b,"f",$1b,"b",7
-	dc.b	13,10,"+------------------------------------------------------------+"
-	dc.b	13,10,"|                  RETRO-ATARIST CORE DEMO                  |"
-	dc.b	13,10,"+------------------------------------------------------------+"
+	dc.b	13,10,"+--------------------------------------+"
+	dc.b	13,10,"|       RETRO-ATARIST CORE DEMO        |"
+	dc.b	13,10,"+--------------------------------------+"
 	dc.b	13,10,13,10,$1b,"b",3,"  EmuTOS boot ROM             OK"
 	dc.b	13,10,$1b,"b",4,"  Hatari 68000 CPU core        RUNNING"
 	dc.b	13,10,$1b,"b",5,"  Native framebuffer video     RUNNING"
 	dc.b	13,10,$1b,"b",6,"  Keyboard input               WAITING"
-	dc.b	13,10,13,10,$1b,"b",7,"  The moving marker below confirms CPU and frame timing."
+	dc.b	13,10,13,10,$1b,"b",7,"  The marker below confirms CPU timing."
 	dc.b	13,10,13,10,"          ",0
 erase_star:
 	dc.b	$1b,"Y",43,42," ",0
 show_star:
 	dc.b	$1b,"b",2,$1b,"Y",43,42,"*",0
 goodbye:
-	dc.b	$1b,"b",7,$1b,"Y",46,32,"Input received. Returning to the EmuTOS desktop...",13,10,$1b,"e",0
+	dc.b	$1b,"b",7,$1b,"Y",46,32,"Returning to the EmuTOS desktop...",13,10,$1b,"e",0
